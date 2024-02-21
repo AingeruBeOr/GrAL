@@ -6,19 +6,25 @@ Recogido de [https://github.com/medmcqa/medmcqa](https://github.com/medmcqa/medm
 
 También disponible en [huggingface/medmcqa](https://huggingface.co/datasets/medmcqa)
 
+## Model
+
+The model to use is [EriBERTa: A Bilingual Pre-Trained Language Model for Clinical Natural Language Processing
+](https://arxiv.org/abs/2306.07373)
+
 ## Estructura del proyecto
 
 ```
 .
-├── baseline
-│   ├── datasetStats.ipynb
-│   ├── datasetStats.py
-│   ├── loadDataset.py
-│   └── train.py
 ├── data
-│   ├── dev.json
-│   ├── test.json
-│   └── train.json
+│   └── MedMCQA/
+├── models
+│   └── eriberta_libre/
 ├── readme.md
-└── requirements.txt
+├── requirements.txt
+└── src
+    ├── datasetStats.ipynb
+    ├── datasetStats.py
+    ├── loadDataset.py
+    ├── train.py
+    └── variables.py
 ```

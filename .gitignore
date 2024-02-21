@@ -1,4 +1,10 @@
+# Caché files
 __pycache__/
 .ipynb_checkpoints
-data/*
+
+# Mac OS files
 .DS_Store
+
+# Large files
+data/*
+models/*

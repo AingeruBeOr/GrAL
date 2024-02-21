@@ -1,35 +1,40 @@
 from transformers import AutoTokenizer, AutoModelForSequenceClassification, Trainer, TrainingArguments
 from loadDataset import MedMCQA_Dataset, load_dataset_as_dict
-
-LR = 2e-5
-EPOCHS = 1
-BATCH_SIZE = 16
-TOKENIZER = ""
-MODEL = "" # use this to finetune the language model
+from variables import PATH_TO_MEDMCQA_TRAIN, PATH_TO_MEDMCQA_DEV, PATH_TO_ERIBERTA
+import torch
 
 # https://huggingface.co/docs/transformers/main/en/tasks/sequence_classification
 
 
+## 0. SET UP ##
+LR = 2e-5
+EPOCHS = 1
+BATCH_SIZE = 16
+device = "cuda" if torch.cuda.is_available() else "cpu"
+
+
 ## 1. LOAD DATASET ##
-#train_dataset = MedMCQA_Dataset("../data/train.json")
-train_dataset = load_dataset_as_dict("../data/train.json")
-dev_dataset = load_dataset_as_dict("../data/dev.json")
+train_dataset = load_dataset_as_dict(PATH_TO_MEDMCQA_TRAIN)
+dev_dataset = load_dataset_as_dict(PATH_TO_MEDMCQA_DEV)
+
 
 ## 2. TOKENIZATION ##
 
 # Load tokenizer
-tokenizer = AutoTokenizer.from_pretrained(TOKENIZER, use_fast=True)
+tokenizer = AutoTokenizer.from_pretrained(PATH_TO_ERIBERTA, use_fast=True)
 
-encoded_train = tokenizer(train_dataset['inputs']) # TODO: hace falta truncar??
-encoded_dev = tokenizer(dev_dataset['inputs']) # TODO: hace falta truncar??
+# Tokenize and encode
+encoded_train = tokenizer(train_dataset['inputs']).to(device) # TODO: hace falta truncar?? Qué estrategia usamos??
+encoded_dev = tokenizer(dev_dataset['inputs']).to(device) # TODO: hace falta truncar?? Qué estrategia usamos??
+
 
 ## 3. FINE-TUNE MODEL ##
 # Load a torch.utils.data.Dataset object (required in Trainer)
 encoded_train_dataset = MedMCQA_Dataset(encoded_train, train_dataset['labels'])
 encoded_dev_dataset = MedMCQA_Dataset(encoded_dev, dev_dataset['labels'])
 
-# Load model
-model = AutoModelForSequenceClassification.from_pretrained(MODEL) # Transformer with default classification head
+# Load model. Transformer with default classification head
+model = AutoModelForSequenceClassification.from_pretrained(PATH_TO_ERIBERTA).to(device) 
 
 # SET TRAINING HYPERPARAMETERS #
 training_args = TrainingArguments(

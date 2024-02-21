@@ -6,17 +6,20 @@
 
 from tqdm import tqdm
 from loadDataset import load_dataset_as_dict
+from variables import PATH_TO_MEDMCQA_TRAIN, PATH_TO_MEDMCQA_DEV, PATH_TO_ERIBERTA
+import torch
 
+device = "cuda" if torch.cuda.is_available() else "cpu"
 
 # In[3]:
 
 
-train_dataset = load_dataset_as_dict("../data/train.json")
+train_dataset = load_dataset_as_dict(PATH_TO_MEDMCQA_TRAIN)
 print(f"Número de instancias en train: {len(train_dataset['inputs'])}")
 print(f"Instancia 0 input: {train_dataset['inputs'][0]}")
 print(f"Instancia 0 label: {train_dataset['labels'][0]}")
 
-dev_dataset = load_dataset_as_dict("../data/dev.json")
+dev_dataset = load_dataset_as_dict(PATH_TO_MEDMCQA_DEV)
 print(f"Número de instancias en dev: {len(dev_dataset['inputs'])}")
 
 
@@ -33,27 +36,27 @@ from transformers import AutoTokenizer
 # In[7]:
 
 
-tokenizer = AutoTokenizer.from_pretrained("distilbert/distilbert-base-uncased", use_fast=True) # TODO. Usar el modelo que debería usar, no cualquier cosa.
+tokenizer = AutoTokenizer.from_pretrained(PATH_TO_ERIBERTA, use_fast=True) # TODO. Usar el modelo que debería usar, no cualquier cosa.
 
-# Indicamos cuales son los tokens especiales para que no los parta
-special_tokens_dict = {
+# Indicamos cuales son los tokens especiales para que no los parta (no hace falta en EriBERTa porque ya son sus tokens especiales)
+"""special_tokens_dict = {
     'bos_token': '<s>',
     'sep_token': '</s>',
     'eos_token': '</s>'
     }
-tokenizer.add_special_tokens(special_tokens_dict)
+tokenizer.add_special_tokens(special_tokens_dict)"""
 
 
 # In[ ]:
 
 
-tokenized_and_encoded_train_dataset = tokenizer(train_dataset['inputs']) # TODO. Añadir padding y truncation
+tokenized_and_encoded_train_dataset = tokenizer(train_dataset['inputs'])
 
 tokenized_train_dataset = []
 for input in tqdm(train_dataset['inputs']):
     tokenized_train_dataset.append(tokenizer.tokenize(input))
 
-tokenized_and_encoded_dev_dataset = tokenizer(dev_dataset['inputs']) # TODO. Añadir padding y truncation
+tokenized_and_encoded_dev_dataset = tokenizer(dev_dataset['inputs'])
 
 
 # Comprobación de una instancia de `train`:

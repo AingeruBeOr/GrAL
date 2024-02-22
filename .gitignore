@@ -1,6 +1,7 @@
 # Caché files
 __pycache__/
 .ipynb_checkpoints
+wandb/
 
 # Mac OS files
 .DS_Store

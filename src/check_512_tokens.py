@@ -1,41 +1,29 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# In[1]:
-
-
 from tqdm import tqdm
-from loadDataset import load_dataset_as_dict
+from loadDataset import load_dataset_as_dict_with_context, load_dataset_as_dict_wo_context
 from variables import PATH_TO_MEDMCQA_TRAIN, PATH_TO_MEDMCQA_DEV, PATH_TO_ERIBERTA
-import torch
-
-device = "cuda" if torch.cuda.is_available() else "cpu"
-
-# In[3]:
-
-
-train_dataset = load_dataset_as_dict(PATH_TO_MEDMCQA_TRAIN)
-print(f"Número de instancias en train: {len(train_dataset['inputs'])}")
-print(f"Instancia 0 input: {train_dataset['inputs'][0]}")
-print(f"Instancia 0 label: {train_dataset['labels'][0]}")
-
-dev_dataset = load_dataset_as_dict(PATH_TO_MEDMCQA_DEV)
-print(f"Número de instancias en dev: {len(dev_dataset['inputs'])}")
-
-
-# # Tokenización
-
-# In[6]:
-
-
 from transformers import AutoTokenizer
 
 
+# 0. SET UP PARAMETERS
+TYPE = 'wo_context' # set to 'with_context' or 'wo_context'
+load_dataset_as_dict = load_dataset_as_dict_with_context if TYPE == 'with_context' else load_dataset_as_dict_wo_context
+
+
+# 1. LOAD DATASET
+# Train dataset
+train_dataset = load_dataset_as_dict(PATH_TO_MEDMCQA_TRAIN)
+print(f"Número de instancias en train: {len(train_dataset['inputs'])}")
+print(f"\nInstancia 0:")
+print(f"\tInput: {train_dataset['inputs'][0]}")
+print(f"\tLabel (correct option): {train_dataset['labels'][0]}")
+
+# Dev dataset
+dev_dataset = load_dataset_as_dict(PATH_TO_MEDMCQA_DEV)
+print(f"\nNúmero de instancias en dev: {len(dev_dataset['inputs'])}")
+
+
+# 2. TOKENIZATION
 # Preparamos el tokenizador:
-
-# In[7]:
-
-
 tokenizer = AutoTokenizer.from_pretrained(PATH_TO_ERIBERTA, use_fast=True) # TODO. Usar el modelo que debería usar, no cualquier cosa.
 
 # Indicamos cuales son los tokens especiales para que no los parta (no hace falta en EriBERTa porque ya son sus tokens especiales)
@@ -45,42 +33,29 @@ tokenizer = AutoTokenizer.from_pretrained(PATH_TO_ERIBERTA, use_fast=True) # TOD
     'eos_token': '</s>'
     }
 tokenizer.add_special_tokens(special_tokens_dict)"""
-
-
-# In[ ]:
-
-
 tokenized_and_encoded_train_dataset = tokenizer(train_dataset['inputs'])
 
 tokenized_train_dataset = []
-for input in tqdm(train_dataset['inputs']):
+for input in tqdm(train_dataset['inputs'], desc="Tokenizing train dataset"):
     tokenized_train_dataset.append(tokenizer.tokenize(input))
 
 tokenized_and_encoded_dev_dataset = tokenizer(dev_dataset['inputs'])
 
 
 # Comprobación de una instancia de `train`:
-
-# In[6]:
-
-
-print(tokenized_train_dataset[0])
-print(len(tokenized_train_dataset[0]))
-print(tokenized_and_encoded_train_dataset['input_ids'][0])
-print(len(tokenized_and_encoded_train_dataset['input_ids'][0]))
-
-
-# Distribución de número de tokens por split (train y dev):
-
-# In[10]:
+# - Visualizar los tokens en formato text
+# - Visualizar los tokens en formato id
+print(f"Example tokenized instance (train):")
+print(f"\tTokens: {tokenized_train_dataset[0]}")
+print(f"\tNumber of tokens: {len(tokenized_train_dataset[0])}")
+print(f"\tToken ids: {tokenized_and_encoded_train_dataset['input_ids'][0]}")
+print(f"\tNumber of token ids: {len(tokenized_and_encoded_train_dataset['input_ids'][0])}")
 
 
+# 3. ESTADÍSTICAS
+# 3.1. Distribución de número de tokens por split (train y dev) en boxplot
 import pandas as pd
 import plotly.graph_objects as go
-
-
-# In[ ]:
-
 
 df_train = pd.DataFrame({'number_of_tokens': [len(instance) for instance in tokenized_and_encoded_train_dataset['input_ids']]})
 df_dev = pd.DataFrame({'number_of_tokens': [len(instance) for instance in tokenized_and_encoded_dev_dataset['input_ids']]})
@@ -107,10 +82,7 @@ fig = go.Figure(data=data, layout=layout)
 fig.show()
 
 
-# Comprobamos si hay alguna instancia con más de 512 tokens e imprimimos ejemplos:
-
-# In[19]:
-
+# 3.2. Comprobamos si hay alguna instancia con más de 512 tokens e imprimimos ejemplos:
 
 def more_than_512_tokens(tokenized_dataset):
     number_of_more_than_512_tokens = 0
@@ -120,8 +92,7 @@ def more_than_512_tokens(tokenized_dataset):
     return number_of_more_than_512_tokens
 
 
-### TRAIN ###
-
+# En el split train
 more_than_512_tokens_train = more_than_512_tokens(tokenized_and_encoded_train_dataset)
 print(f"Number of instances with more than 512 tokens (train): {more_than_512_tokens_train}/{len(tokenized_and_encoded_train_dataset['input_ids'])} ({more_than_512_tokens_train/len(tokenized_and_encoded_train_dataset['input_ids'])*100:.2f}%)")
 
@@ -134,18 +105,12 @@ for i, instance_tokenized in enumerate(tokenized_and_encoded_train_dataset['inpu
             if number_of_examples == 0:
                 break
 
-
-### DEV ###
-
+# En el split dev
 more_than_512_tokens_dev = more_than_512_tokens(tokenized_and_encoded_dev_dataset)
 print(f"Number of instances with more than 512 tokens (dev): {more_than_512_tokens_dev}/{len(tokenized_and_encoded_dev_dataset['input_ids'])} ({more_than_512_tokens_dev/len(tokenized_and_encoded_dev_dataset['input_ids'])*100:.2f}%)")
 
 
-# Boxplot de diferentes partes de los inputs:
-
-# In[8]:
-
-
+# 3.3. Boxplot de diferentes partes de los inputs:
 encoded_train_context = []
 encoded_train_question = []
 encoded_train_optiona = []
@@ -154,16 +119,24 @@ encoded_train_optionc = []
 encoded_train_optiond = []
 encoded_train_options = []
 
-for input in tqdm(train_dataset['inputs']):
-    context = input.split('</s>')[0].replace('<s>', '')
-    question = input.split('</s>')[1]
-    optiona = input.split('</s>')[2]
-    optionb = input.split('</s>')[3]
-    optionc = input.split('</s>')[4]
-    optiond = input.split('</s>')[5]
-    options = optiona + '</s>' + optionb + '</s>' + optionc + '</s>' + optiond
+for input in tqdm(train_dataset['inputs'], desc="Tokenizing different parts of the input"):
+    if TYPE == 'with_context':
+        context = input.split('</s>')[0]
+        question = input.split('</s>')[1]
+        optiona = input.split('</s>')[2]
+        optionb = input.split('</s>')[3]
+        optionc = input.split('</s>')[4]
+        optiond = input.split('</s>')[5]
+        options = optiona + '</s>' + optionb + '</s>' + optionc + '</s>' + optiond
+    else:
+        question = input.split('</s>')[0]
+        optiona = input.split('</s>')[1]
+        optionb = input.split('</s>')[2]
+        optionc = input.split('</s>')[3]
+        optiond = input.split('</s>')[4]
+        options = optiona + '</s>' + optionb + '</s>' + optionc + '</s>' + optiond
 
-    encoded_train_context.append(tokenizer(context))
+    if TYPE == 'with_context': encoded_train_context.append(tokenizer(context))
     encoded_train_question.append(tokenizer(question))
     encoded_train_optiona.append(tokenizer(optiona))
     encoded_train_optionb.append(tokenizer(optionb))
@@ -171,13 +144,10 @@ for input in tqdm(train_dataset['inputs']):
     encoded_train_optiond.append(tokenizer(optiond))
     encoded_train_options.append(tokenizer(options))
 
-print(len(encoded_train_context))
+print(len(encoded_train_question))
 
 
-# In[12]:
-
-
-df_train_context = pd.DataFrame({'number_of_tokens': [len(instance['input_ids']) for instance in encoded_train_context]})
+if TYPE == 'with_context': df_train_context = pd.DataFrame({'number_of_tokens': [len(instance['input_ids']) for instance in encoded_train_context]})
 df_train_question = pd.DataFrame({'number_of_tokens': [len(instance['input_ids']) for instance in encoded_train_question]})
 df_train_optiona = pd.DataFrame({'number_of_tokens': [len(instance['input_ids']) for instance in encoded_train_optiona]})
 df_train_optionb = pd.DataFrame({'number_of_tokens': [len(instance['input_ids']) for instance in encoded_train_optionb]})
@@ -185,11 +155,12 @@ df_train_optionc = pd.DataFrame({'number_of_tokens': [len(instance['input_ids'])
 df_train_optiond = pd.DataFrame({'number_of_tokens': [len(instance['input_ids']) for instance in encoded_train_optiond]})
 df_train_options = pd.DataFrame({'number_of_tokens': [len(instance['input_ids']) for instance in encoded_train_options]})
 
-# Crea el primer boxplot
-trace1 = go.Box(
-    x=df_train_context['number_of_tokens'],
-    name='Train context'
-)
+if TYPE == 'with_context':
+    # Crea el primer boxplot
+    trace1 = go.Box(
+        x=df_train_context['number_of_tokens'],
+        name='Train context'
+    )
 
 # Crea el segundo boxplot
 trace2 = go.Box(
@@ -228,7 +199,8 @@ trace7 = go.Box(
 )
 
 # Combina los boxplots en una sola figura
-data = [trace1, trace2, trace3, trace4, trace5, trace6, trace7]
+if TYPE == 'with_context': data = [trace1, trace2, trace3, trace4, trace5, trace6, trace7]
+else: data = [trace2, trace3, trace4, trace5, trace6, trace7]
 layout = go.Layout(
     title="Distribution of the number of tokens in the input", 
     xaxis_title="Number of tokens", 

@@ -1,44 +1,84 @@
-from torch.utils.data import Dataset
+import datasets
 import json
-import torch
+from variables import PATH_TO_MEDMCQA_DATASET
 
-class MedMCQA_Dataset(Dataset):
-    def __init__(self, encodings: list, labels: list):
-        self.encodings = encodings
-        self.labels = labels
+"""
+References:
+    - https://github.com/Iker0610/transformer_scripts/blob/main/src/dataset_loader/conll_dataset_loader.py
+    - https://huggingface.co/docs/datasets/about_dataset_load
+    - https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/datasets/datasetbuilder.png
+    - https://huggingface.co/docs/datasets/dataset_script
+"""
 
-    def __len__(self):
-        return len(self.encodings)
+# Create a DatasetBuilder class. GeneratorBasedBuilder is a subclass of DatasetBuilder that allows defining a _generate_examples method.
+class MedMCQA_Dataset(datasets.GeneratorBasedBuilder):
 
-    def __getitem__(self, index):
-        item = {key: torch.tensor(val[index]) for key, val in self.encodings.items()}
-        item['labels'] = torch.tensor(self.labels[index])
-        return item
-    
+    # Define the dataset.BuilderConfig for the dataset
+    BUILDER_CONFIGS = [
+        datasets.BuilderConfig(
+            name="MedMCQA_dataset",
+            version=datasets.Version("1.0.0"),
+            description="Dataset for MedMCQA",
+            data_dir = PATH_TO_MEDMCQA_DATASET
+        )
+    ]
 
-def load_dataset_as_dict_with_context(path):
-    with open(path, 'r') as file:
-        dataset = [json.loads(row) for row in file]
+    # Define the structure of the dataset
+    def _info(self):
+        return datasets.DatasetInfo(
+            description="Dataset for Sequence Classification",
+            features=datasets.Features(
+                {
+                    "question": datasets.Value("string"),
+                    "opa": datasets.Value("string"),
+                    "opb": datasets.Value("string"),
+                    "opc": datasets.Value("string"),
+                    "opd": datasets.Value("string"),
+                    "cop": datasets.Value("int32")
+                    # ignoring 'exp', 'subject_name', 'topic_name' and 'choice_type' because are not used for the task
+                    # 'id' is also ignored because it is used as the key for each instance, not as a feature for it
+                }
+            ),
+            homepage="https://medmcqa.github.io/"
+        )
 
-    # Formato de dataset_dict:
-    # {'inputs': ['<s>exp</s>question</s>opa</s>opb</s>opc</s>opd', ...], 'labels': [1, 2, 3, 4, ...]}
-    dataset_dict = {}
-    # No hace falta poner los tokens de inicio y fin de secuencia porque el tokenizador ya los añade automáticamente
-    dataset_dict['inputs'] = [f'{instance["exp"]}</s>{instance["question"]}</s>{instance["opa"]}</s>{instance["opb"]}</s>{instance["opc"]}</s>{instance["opd"]}' for instance in dataset]
-    dataset_dict['labels'] = [instance["cop"] for instance in dataset]
+    def _split_generators(self, dl_manager):
+        # Se comprueba que se ha especificado el path a los ficheros:
+        if not self.config.data_files:
+            raise ValueError(f"At least one data file must be specified, but got data_files={self.config.data_files}")
 
-    return dataset_dict
+        # Se obtienen los path:
+        data_files = dl_manager.download_and_extract(self.config.data_files)
+        print("Data files: ", data_files)
 
+        splits = []
+        # Si solo se ha pasado un conjunto se carga como el split del train
+        if isinstance(data_files, (str, list, tuple)):
+            files = data_files
+            if isinstance(files, str):
+                files = [files]
+            splits.append(datasets.SplitGenerator(name=datasets.Split.TRAIN, gen_kwargs={"files": files}))
 
-def load_dataset_as_dict_wo_context(path):
-    with open(path, 'r') as file:
-        dataset = [json.loads(row) for row in file]
+        # Si se ha pasado un diccionario, se guardan los distintos splits:
+        else:
+            for split_name, files in data_files.items():
+                if isinstance(files, str):
+                    files = [files]
+                splits.append(datasets.SplitGenerator(name=split_name, gen_kwargs={"files": files}))
 
-    # Formato de dataset_dict:
-    # {'inputs': ['<s>question</s>opa</s>opb</s>opc</s>opd', ...], 'labels': [1, 2, 3, 4, ...]}
-    dataset_dict = {}
-    # No hace falta poner los tokens de inicio y fin de secuencia porque el tokenizador ya los añade automáticamente
-    dataset_dict['inputs'] = [f'{instance["question"]}</s>{instance["opa"]}</s>{instance["opb"]}</s>{instance["opc"]}</s>{instance["opd"]}' for instance in dataset]
-    dataset_dict['labels'] = [instance["cop"] for instance in dataset]
+        return splits
 
-    return dataset_dict
+    def _generate_examples(self, files):
+        for file in files:
+            with open(file, "r", encoding="utf-8") as file:
+                instances = [json.loads(row) for row in file]
+
+            for instance in instances:
+                yield instance["id"], {
+                    "question": instance["question"],
+                    "opa": instance["opa"],
+                    "opb": instance["opb"],
+                    "opc": instance["opc"],
+                    "opd": instance["opd"],
+                    "cop": instance["cop"],
+                }        

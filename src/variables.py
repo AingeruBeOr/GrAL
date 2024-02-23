@@ -9,3 +9,7 @@ PATH_TO_MEDMCQA_TEST = PATH_TO_MEDMCQA_DATASET + 'test.json'
 
 # Path to EriBERTa model
 PATH_TO_ERIBERTA = '../models/eriberta_libre/'
+
+
+# Path to the fine-tuned model (outputs)
+PATH_TO_BASELINE_OUTPUT = '../models/baseline/'

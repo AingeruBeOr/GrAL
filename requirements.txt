@@ -1,5 +1,7 @@
 pandas
 transformers
+datasets
 torch
 notebook
 plotly
+wandb

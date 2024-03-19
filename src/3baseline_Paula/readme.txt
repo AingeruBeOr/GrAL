@@ -1,0 +1,1 @@
+Esto es todo adaptado del repo de Paula: https://github.com/paulaonta/medmcqa

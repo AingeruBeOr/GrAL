@@ -1,5 +1,5 @@
 import pytorch_lightning as pl
-from pytorch_lightning.core.step_result import TrainResult,EvalResult
+#from pytorch_lightning.core.step_result import TrainResult,EvalResult # deprecated
 from pytorch_lightning import Trainer
 from torch.utils.data import SequentialSampler,RandomSampler
 from torch import nn
@@ -16,6 +16,19 @@ import functools
 
 '''
 Adaptado de: https://github.com/paulaonta/medmcqa/blob/main/model_5ans.py
+
+Adaptaciones:
+
+Explanation of Changes:
+
+Removed TrainResult and EvalResult: These classes are no longer used in PyTorch Lightning 1.9.0 or later.
+Directly Logging Metrics: Instead of using deprecated methods like result.log, you can now use self.log within your training_step and test_step methods.
+Logging on Epoch: The on_epoch=True argument ensures that the metrics are logged only at the end of each epoch.
+
+Additional Notes:
+
+If you need to log additional data like logits or labels during inference (test step), you can add them to self.log as well.
+This rewritten code maintains the core functionality of the original code while adhering to the updated PyTorch Lightning API.
 '''
 
 class MCQAModel(pl.LightningModule):
@@ -67,10 +80,11 @@ class MCQAModel(pl.LightningModule):
       inputs[key] = inputs[key].to(self.args["device"])
     logits = self(**inputs)
     loss = self.ce_loss(logits,labels)
-    result = TrainResult(loss)
-    result.log('train_loss', loss, on_epoch=True)
-    self.log('train_loss', loss)
-    return loss #return result
+    #result = TrainResult(loss) # deprecated
+    #result.log('train_loss', loss, on_epoch=True) # deprecated
+    # # Log metrics directly using self.log
+    self.log('train_loss', loss, on_epoch=True)
+    return loss # Previously: return result (TrainResult). Now there is no need to return a result object
   
   def test_step(self, batch, batch_idx):
     inputs,labels = batch
@@ -78,12 +92,15 @@ class MCQAModel(pl.LightningModule):
       inputs[key] = inputs[key].to(self.args["device"])
     logits = self(**inputs)
     loss = self.ce_loss(logits,labels)
-    result = EvalResult(loss)
-    result.log('test_loss', loss, on_epoch=True)
-    result.log('logits',logits,on_epoch=True)
-    result.log('labels',labels,on_epoch=True)
-    self.log('test_loss', loss)
-    return result
+    #result = EvalResult(loss) # deprecated
+    #result.log('test_loss', loss, on_epoch=True) # deprecated
+    #result.log('logits',logits,on_epoch=True) # deprecated
+    #result.log('labels',labels,on_epoch=True) # deprecated
+    
+    self.log('test_loss', loss, on_epoch=True)
+    self.log('logits',logits,on_epoch=True)
+    self.log('labels',labels,on_epoch=True)
+    return loss # Previously: return result (EvalResult). Now there is no need to return a result object
  
   def test_epoch_end(self, outputs):
     avg_loss = outputs['test_loss'].mean()
@@ -92,11 +109,12 @@ class MCQAModel(pl.LightningModule):
     self.test_predictions = predictions
     correct_predictions = torch.sum(predictions==labels)
     accuracy = correct_predictions.cpu().detach().numpy()/(predictions.size()[0] + 6)#self.args['incorrect_ans'])
-    result = EvalResult(checkpoint_on=avg_loss,early_stop_on=avg_loss)
-    result.log_dict({"test_loss":avg_loss,"test_acc":accuracy},prog_bar=True,on_epoch=True)
+    # result = EvalResult(checkpoint_on=avg_loss,early_stop_on=avg_loss) # deprecated
+    # result.log_dict({"test_loss":avg_loss,"test_acc":accuracy},prog_bar=True,on_epoch=True) # deprecated
+    self.log_dict({"test_loss":avg_loss,"test_acc":accuracy},prog_bar=True,on_epoch=True)
     self.log('avg_test_loss', avg_loss)
     self.log('avg_test_acc', accuracy)
-    return result
+    return avg_loss # Previously: return result (EvalResult). Now there is no need to return a result object
   
   def validation_step(self, batch, batch_idx):
     props = torch.cuda.get_device_properties(self.args['device'])
@@ -105,13 +123,14 @@ class MCQAModel(pl.LightningModule):
       inputs[key] = inputs[key].to(self.args['device'])
     logits = self(**inputs)
     loss = self.ce_loss(logits,labels)
-    result = EvalResult(loss)
-    result.log('val_loss', loss, on_epoch=True)
-    result.log('logits',logits,on_epoch=True)
-    result.log('labels',labels,on_epoch=True)
-    self.log('val_loss', loss)
-    return result
-
+    #result = EvalResult(loss) # deprecated
+    #result.log('val_loss', loss, on_epoch=True) # deprecated
+    #result.log('logits',logits,on_epoch=True) # deprecated
+    #result.log('labels',labels,on_epoch=True) # deprecated
+    self.log('val_loss', loss, on_epoch=True)
+    self.log('logits',logits,on_epoch=True)
+    self.log('labels',labels,on_epoch=True)
+    return loss # Previously: return result (EvalResult). Now there is no need to return a result object
 
   def validation_epoch_end(self, outputs):
         avg_loss = outputs['val_loss'].mean()
@@ -119,11 +138,12 @@ class MCQAModel(pl.LightningModule):
         labels = outputs['labels']
         correct_predictions = torch.sum(predictions==labels)
         accuracy = correct_predictions.cpu().detach().numpy()/predictions.size()[0]
-        result = EvalResult(checkpoint_on=avg_loss,early_stop_on=avg_loss)
-        result.log_dict({"val_loss":avg_loss,"val_acc":accuracy},prog_bar=True,on_epoch=True)
+        #result = EvalResult(checkpoint_on=avg_loss,early_stop_on=avg_loss) # deprecated
+        #result.log_dict({"val_loss":avg_loss,"val_acc":accuracy},prog_bar=True,on_epoch=True) # deprecated
+        self.log_dict({"val_loss":avg_loss,"val_acc":accuracy},prog_bar=True,on_epoch=True)
         self.log('avg_val_loss', avg_loss)
         self.log('avg_val_acc', accuracy)
-        return result
+        return avg_loss # Previously: return result (EvalResult). Now there is no need to return a result object
         
   def configure_optimizers(self):
     optimizer = AdamW(self.parameters(),lr=self.args['learning_rate'],eps=1e-8)

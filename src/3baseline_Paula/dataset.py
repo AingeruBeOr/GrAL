@@ -65,7 +65,7 @@ class CasiMedicosDataset(Dataset):
                jsonl_path,
                use_context=False):
     with open(jsonl_path, 'r') as file:
-      self.dataset = [json.load(row) for row in file]
+      self.dataset = [json.loads(row) for row in file]
     self.use_context = use_context # Aunque no lo vamos a utilizar
 
   def __len__(self):
@@ -84,7 +84,6 @@ class CasiMedicosDataset(Dataset):
       instance['options']["4"],
       instance['options']["5"] if isinstance(instance['options']["5"], str) else ""
     )
-    options = instance['options'] # TODO hay que hacer algo con las options. Igual también hay que hacer -1
     label = instance['correct_option']
     return_tuple+=(question, options, label)
     return return_tuple

@@ -105,14 +105,22 @@ class MCQAModel(pl.LightningModule):
     return loss # Previously: return result (EvalResult). Now there is no need to return a result object
  
   def test_epoch_end(self, outputs):
-    avg_loss = outputs['test_loss'].mean()
-    predictions = torch.argmax(outputs['logits'],axis=-1)
-    labels = outputs['labels']
-    self.test_predictions = predictions
-    correct_predictions = torch.sum(predictions==labels)
-    accuracy = correct_predictions.cpu().detach().numpy()/(predictions.size()[0] + 6)#self.args['incorrect_ans'])
-    # result = EvalResult(checkpoint_on=avg_loss,early_stop_on=avg_loss) # deprecated
-    # result.log_dict({"test_loss":avg_loss,"test_acc":accuracy},prog_bar=True,on_epoch=True) # deprecated
+    # 'outputs' is a list of whatever you returned in `test_step`. Each element of the list corresponds to one batch of samples from each step in an epoch.
+    # Calcular el promedio del loss
+    avg_loss = sum([x['val_loss'].cpu() for x in outputs]) / len(outputs)
+
+    # Calcular la predicción haciendo argmax de los logits
+    predictions = [torch.argmax(x['logits'],axis=-1) for x in outputs]
+
+    # Calcular cuantos aciertos han habido (accuracy)
+    correct_predictions = 0
+    for index, x in enumerate(outputs):
+      correct_predictions += torch.sum(predictions[index]==x['labels'])
+    each_prediction_size = predictions[0].size()[0]
+    predictions_length = len(predictions)
+    total_number_of_predictions = each_prediction_size * predictions_length
+    accuracy = correct_predictions.cpu().detach().numpy() / total_number_of_predictions
+
     self.log_dict({"test_loss":avg_loss,"test_acc":accuracy},prog_bar=True,on_epoch=True)
     self.log('avg_test_loss', avg_loss)
     self.log('avg_test_acc', accuracy)
@@ -219,6 +227,9 @@ class MCQAModel(pl.LightningModule):
 
     return tokenized_batch,torch.tensor(labels)
   
+
+  ## ↓ DataLoaders ↓ ##
+
   def train_dataloader(self):
     train_sampler = RandomSampler(self.train_dataset)
     model_collate_fn = functools.partial(

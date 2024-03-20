@@ -140,10 +140,15 @@ class MCQAModel(pl.LightningModule):
     self.log('val_loss', loss, on_epoch=True)
     #self.log('logits',logits.data.cpu().numpy().tolist(),on_epoch=True) # .data.cpu().numpy() to get only the values # TODO, es necesario loggear los logits?
     #self.log('labels',labels,on_epoch=True) # TODO, es necesario loggear los labels?
-    return loss # Previously: return result (EvalResult). Now there is no need to return a result object
+    return {'val_loss': loss, 'logits': logits, 'labels': labels} # Previously: return result (EvalResult). Now there is no need to return a result object.
 
   def validation_epoch_end(self, outputs):
-    avg_loss = outputs['val_loss'].mean()
+    # 'outputs' is a list of whatever you returned in `validation_step`
+    print(f'(Validation epoch end) Output: {outputs}')
+    print(f'(Validation epoch end) Output label: {outputs[0]}')
+    # Calcular el promedio del loss
+    avg_loss = sum([x['val_loss'].cpu() for x in outputs]) / len(outputs)
+    #avg_loss = outputs['val_loss'].mean() # se usaba cuando validation_step devolvía un EvalResult
     predictions = torch.argmax(outputs['logits'],axis=-1)
     labels = outputs['labels']
     correct_predictions = torch.sum(predictions==labels)

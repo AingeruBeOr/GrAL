@@ -5,12 +5,11 @@ from pytorch_lightning.loggers import WandbLogger
 from pytorch_lightning.loggers import CSVLogger
 import pytorch_lightning as pl
 from pytorch_lightning import Trainer
-import torch,os,sys
+import torch,os
 import pandas as pd
 from tqdm import tqdm
 # from multiprocessing import Process # TODO no se utiliza, se podría borrar
-import time,argparse
-import os
+import time,argparse,datetime
 
 '''
 Adaptado de:
@@ -39,8 +38,8 @@ def train(gpu,
     pl.seed_everything(42)
 
     torch.cuda.init()
-    print(torch.cuda.is_available())
-    print(torch.cuda.device_count())
+    print("Cuda is available? " + str(torch.cuda.is_available()))
+    print("Available devices? " + str(torch.cuda.device_count()))
 
     # Set up experiment folder
     EXPERIMENT_FOLDER = os.path.join(models_folder, experiment_name)
@@ -48,7 +47,7 @@ def train(gpu,
     experiment_string = experiment_name+'-{epoch:02d}-{val_loss:.2f}-{val_acc:.2f}'
 
     # Set up loggers
-    wb = WandbLogger(project=WB_PROJECT,name=experiment_name,version=version)
+    wb = WandbLogger(project=WB_PROJECT, name=experiment_name, version=version)
     csv_log = CSVLogger(models_folder, name=experiment_name, version=version)
 
     # Load train, test and val datasets
@@ -63,7 +62,8 @@ def train(gpu,
                                     mode='min')
 
     cp_callback = pl.callbacks.ModelCheckpoint(monitor='val_loss',
-                                               filepath=os.path.join(EXPERIMENT_FOLDER,experiment_string),
+                                               #filepath=os.path.join(EXPERIMENT_FOLDER,experiment_string), # deprecated
+                                               dirpath=os.path.join(EXPERIMENT_FOLDER,experiment_string),
                                                save_top_k=1,
                                                save_weights_only=False,
                                                mode='min')
@@ -76,13 +76,17 @@ def train(gpu,
                               test_dataset=test_dataset,
                               val_dataset=val_dataset)
 
-    trainer = Trainer(#accelerator="cuda", gpus=[gpu],strategy="auto",
-                    gpus=gpu,
-                    distributed_backend='ddp' if not isinstance(gpu,list) else None,
-                    logger=[wb,csv_log],
-                    callbacks= [early_stopping_callback,cp_callback],
-                    #resume_from_checkpoint=pretrained_model,
-                    max_epochs=args.num_epochs)
+    trainer = Trainer(
+        accelerator='gpu',
+        #devices=gpu,
+        gpus=gpu,
+        #distributed_backend='ddp' if not isinstance(gpu,list) else None, #deprecated
+        strategy="ddp" if not isinstance(gpu, list) else None,
+        logger=[wb,csv_log],
+        callbacks= [early_stopping_callback,cp_callback],
+        #resume_from_checkpoint=pretrained_model,
+        max_epochs=args.num_epochs
+    )
     
     trainer.fit(mcqaModel)
     print(f"Training completed")
@@ -133,7 +137,7 @@ if __name__ == "__main__":
 
     models = ["allenai/scibert_scivocab_uncased","bert-base-uncased"]
     parser = argparse.ArgumentParser()
-    parser.add_argument("--model", default="bert-base-uncased", help="name of the model")
+    parser.add_argument("--model", default="eriberta_libre", help="name of the model")
     #parser.add_argument("--dataset_folder_name", default="content/medmcqa_data/", help="dataset folder")
     parser.add_argument("--use_context", default=False, action='store_true', help="mention this flag to use_context")
     cmd_args = parser.parse_args()
@@ -150,11 +154,14 @@ if __name__ == "__main__":
                     use_context=cmd_args.use_context)
     
     #exp_name = f"4_5_ANS_(1.b)_ckpt_{model}@@@{os.path.basename(exp_dataset_folder)}@@@use_context{str(cmd_args.use_context)}@@@data{str(args.train_csv)}@@@seqlen{str(args.max_len)}".replace("/","_") # La linea de abajo es la adaptación hecha por mí de lo de Paula
-    exp_name = f"{model}@@@{os.path.basename(DATASET_FOLDER)}@@@use_context{str(cmd_args.use_context)}@@@data{str(args.train_csv)}@@@seqlen{str(args.max_len)}".replace("/","_")
+    current_datetime = datetime.datetime.now()
+    formatted_datetime = current_datetime.strftime("%Y-%m-%d-%H-%M")
+    #exp_name = f"{model}@@@{os.path.basename(DATASET_FOLDER)}@@@use_context{str(cmd_args.use_context)}@@@data{str(args.train_csv)}@@@seqlen{str(args.max_len)}@@@execTime{str(formatted_datetime)}".replace("/","_")
+    exp_name = f"{model}@@@{os.path.basename(DATASET_FOLDER)}@@@data{str(args.train_csv)}@@@seqlen{str(args.max_len)}@@@execTime{str(formatted_datetime)}".replace("/","_")
 
     train(gpu=args.gpu,
         args=args,
-        exp_dataset_folder=DATASET_FOLDER,
+        #exp_dataset_folder=DATASET_FOLDER,
         experiment_name=exp_name,
         models_folder=MODELS_FOLDER,
         version=exp_name)

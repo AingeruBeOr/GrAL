@@ -143,16 +143,33 @@ class MCQAModel(pl.LightningModule):
     return {'val_loss': loss, 'logits': logits, 'labels': labels} # Previously: return result (EvalResult). Now there is no need to return a result object.
 
   def validation_epoch_end(self, outputs):
-    # 'outputs' is a list of whatever you returned in `validation_step`
+    # 'outputs' is a list of whatever you returned in `validation_step`. Each element of the list corresponds to one batch of samples from each step in an epoch.
     print(f'(Validation epoch end) Output: {outputs}')
     print(f'(Validation epoch end) Output label: {outputs[0]}')
+    
     # Calcular el promedio del loss
     avg_loss = sum([x['val_loss'].cpu() for x in outputs]) / len(outputs)
+    print(f'(Validation epoch end) Avg loss: {avg_loss}')
     #avg_loss = outputs['val_loss'].mean() # se usaba cuando validation_step devolvía un EvalResult
-    predictions = torch.argmax(outputs['logits'],axis=-1)
-    labels = outputs['labels']
-    correct_predictions = torch.sum(predictions==labels)
-    accuracy = correct_predictions.cpu().detach().numpy()/predictions.size()[0]
+    
+    # Calcular la predicción haciendo argmax de los logits
+    predictions = [torch.argmax(x['logits'],axis=-1) for x in outputs]
+    print(f'(Validation epoch end) Predictions: {predictions}')
+    #predictions = torch.argmax(outputs['logits'],axis=-1)
+    
+    # Calcular cuantos aciertos han habido (accuracy)
+    correct_predictions = 0
+    for index, x in enumerate(outputs):
+      correct_predictions += torch.sum(predictions[index]==x['labels'])
+    each_prediction_size = predictions[0].size()[0]
+    predictions_length = len(predictions)
+    total_number_of_predictions = each_prediction_size * predictions_length
+    accuracy = correct_predictions.cpu().detach().numpy() / total_number_of_predictions
+
+    #labels = outputs['labels']
+    #correct_predictions = torch.sum(predictions==labels)
+    #accuracy = correct_predictions.cpu().detach().numpy()/predictions.size()[0]
+    
     #result = EvalResult(checkpoint_on=avg_loss,early_stop_on=avg_loss) # deprecated
     #result.log_dict({"val_loss":avg_loss,"val_acc":accuracy},prog_bar=True,on_epoch=True) # deprecated
     self.log_dict({"val_loss":avg_loss,"val_acc":accuracy},prog_bar=True,on_epoch=True)

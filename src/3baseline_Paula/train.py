@@ -7,6 +7,7 @@ import pytorch_lightning as pl
 from pytorch_lightning import Trainer
 import torch,os
 import pandas as pd
+import json
 from tqdm import tqdm
 # from multiprocessing import Process # TODO no se utiliza, se podría borrar
 import time,argparse,datetime
@@ -88,31 +89,53 @@ def train(gpu,
         max_epochs=args.num_epochs
     )
     
+    # Start training
     trainer.fit(mcqaModel)
     print(f"Training completed")
 
-    ckpt = [f for f in os.listdir(EXPERIMENT_FOLDER) if f.endswith('.ckpt')]
+    checkpoints_dir = os.path.join(EXPERIMENT_FOLDER,experiment_string)
+    print(f"Checkpoints dir: {checkpoints_dir}")
+    ckpt = [f for f in os.listdir(checkpoints_dir) if f.endswith('.ckpt')]
+    print(f"Checkpoints list {ckpt}")
 
-    # Load best model at training to use it for inference on the train set
-    inference_model = MCQAModel.load_from_checkpoint(os.path.join(EXPERIMENT_FOLDER,ckpt[0]))
+    # Load best model at training to use it for inference on the test set
+    inference_model = MCQAModel.load_from_checkpoint(os.path.join(checkpoints_dir,ckpt[0]))
     inference_model = inference_model.to("cuda")
     inference_model = inference_model.eval()
     
     # Test the model on the test set
-    _,test_results = trainer.test(ckpt_path=os.path.join(EXPERIMENT_FOLDER,ckpt[0]))
-    wb.log_metrics(test_results)
-    csv_log.log_metrics(test_results)
+    test_results = trainer.test(ckpt_path=os.path.join(checkpoints_dir,ckpt[0]))
+    wb.log_metrics(test_results[0])
+    csv_log.log_metrics(test_results[0])
     
     # Persist test dataset predictions
-    test_df = pd.read_csv(args.test_csv)
-    test_df.loc[:,"predictions"] = [pred for pred in run_inference(inference_model,mcqaModel.test_dataloader(),args)]
-    test_df.to_csv(os.path.join(EXPERIMENT_FOLDER,"test_results.csv"),index=False)
-    print(f"Test predictions written to {os.path.join(EXPERIMENT_FOLDER,'test_results.csv')}")
+    #test_df = pd.read_csv(args.test_csv)
+    test_set = []
+    with open(args.test_csv, 'r') as file:
+      test_set = [json.loads(row) for row in file]
+    predictions = run_inference(inference_model,mcqaModel.test_dataloader(),args)
+    for instance, prediction in zip(test_set, predictions):
+      instance['prediction'] = prediction.item() # numpy.int64 to int to be able to serialize to json
+    #test_df.loc[:,"predictions"] = [pred for pred in run_inference(inference_model,mcqaModel.test_dataloader(),args)]
+    with open(os.path.join(EXPERIMENT_FOLDER, 'test_predictions.jsonl'), 'w') as file:
+        for instance in test_set:
+            file.write(json.dumps(instance) + '\n')
+    #test_df.to_csv(os.path.join(EXPERIMENT_FOLDER,"test_results.csv"),index=False)
+    print(f"Test predictions written to {os.path.join(EXPERIMENT_FOLDER, 'test_predictions.jsonl')}")
 
-    val_df = pd.read_csv(args.dev_csv)
-    val_df.loc[:,"predictions"] = [pred for pred in run_inference(inference_model,mcqaModel.val_dataloader(),args)]
-    val_df.to_csv(os.path.join(EXPERIMENT_FOLDER,"dev_results.csv"),index=False)
-    print(f"Val predictions written to {os.path.join(EXPERIMENT_FOLDER,'dev_results.csv')}")
+    #val_df = pd.read_csv(args.dev_csv)
+    val_set = []
+    with open(args.dev_csv, 'r') as file:
+        val_set = [json.loads(row) for row in file]
+    predictions = run_inference(inference_model,mcqaModel.val_dataloader(),args)
+    for instance, prediction in zip(val_set, predictions):
+        instance['prediction'] = prediction.item() # numpy.int64 to int to be able to serialize to json
+    #val_df.loc[:,"predictions"] = [pred for pred in run_inference(inference_model,mcqaModel.val_dataloader(),args)]
+    with open(os.path.join(EXPERIMENT_FOLDER, 'dev_predictions.jsonl'), 'w') as file:
+        for instance in val_set:
+            file.write(json.dumps(instance) + '\n')
+    #val_df.to_csv(os.path.join(EXPERIMENT_FOLDER,"dev_results.csv"),index=False)
+    print(f"Val predictions written to {os.path.join(EXPERIMENT_FOLDER, 'dev_predictions.jsonl')}")
 
     del mcqaModel
     del inference_model
@@ -125,7 +148,7 @@ def run_inference(model,dataloader,args):
         # batch_size = len(labels) # TODO, no se usa, se podría borrar
         for key in inputs.keys():
             inputs[key] = inputs[key].to(args.device)
-        with torch.no_grad():
+        with torch.no_grad(): # Don't store the gradients. As we are not doing backpropagation in inference, there is no need to save them
             outputs = model(**inputs)
         prediction_idxs = torch.argmax(outputs,axis=1).cpu().detach().numpy()
         predictions.extend(list(prediction_idxs))

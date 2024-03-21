@@ -2,11 +2,11 @@ from torch.utils.data import Dataset
 import pandas as pd
 import json
 
-'''
-Author: MedMCQA team
-Description: Load CSV as Dataset for data with 5 possible answers 
-'''
 class MCQADataset5(Dataset):
+  '''
+  Author: MedMCQA team
+  Description: Load CSV as Dataset for data with 5 possible answers 
+  '''
 
   def __init__(self,
                csv_path,
@@ -29,11 +29,11 @@ class MCQADataset5(Dataset):
     return_tuple+=(question,options,label)
     return return_tuple
 
-'''
-Author: MedMCQA team
-Description: Load CSV as Dataset for data with 4 possible answers
-'''
 class MCQADataset4(Dataset):
+  '''
+  Author: MedMCQA team
+  Description: Load CSV as Dataset for data with 4 possible answers
+  '''
 
   def __init__(self,
                csv_path,
@@ -56,10 +56,10 @@ class MCQADataset4(Dataset):
     return_tuple+=(question,options,label)
     return return_tuple
 
-'''
-Author: Aingeru
-'''  
 class CasiMedicosDataset(Dataset):
+  '''
+  Author: Aingeru
+  '''  
 
   def __init__(self,
                jsonl_path,
@@ -84,7 +84,7 @@ class CasiMedicosDataset(Dataset):
       instance['options']["4"],
       instance['options']["5"] if isinstance(instance['options']["5"], str) else ""
     )
-    label = instance['correct_option']
+    label = instance['correct_option'] - 1 # -1 because it has to be [0, 1, 2, 3, 4] and not [1, 2, 3, 4, 5]
     return_tuple+=(question, options, label)
     return return_tuple
   

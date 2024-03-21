@@ -100,9 +100,9 @@ class MCQAModel(pl.LightningModule):
     #result.log('labels',labels,on_epoch=True) # deprecated
     
     self.log('test_loss', loss, on_epoch=True)
-    self.log('logits',logits,on_epoch=True)
-    self.log('labels',labels,on_epoch=True)
-    return loss # Previously: return result (EvalResult). Now there is no need to return a result object
+    #self.log('logits',logits,on_epoch=True) # TODO, es necesario loggear los logits?
+    #self.log('labels',labels,on_epoch=True) # TODO, es necesario loggear los labels?
+    return {'val_loss': loss, 'logits': logits, 'labels': labels} # Previously: return result (EvalResult). Now there is no need to return a result object
  
   def test_epoch_end(self, outputs):
     # 'outputs' is a list of whatever you returned in `test_step`. Each element of the list corresponds to one batch of samples from each step in an epoch.
@@ -152,17 +152,17 @@ class MCQAModel(pl.LightningModule):
 
   def validation_epoch_end(self, outputs):
     # 'outputs' is a list of whatever you returned in `validation_step`. Each element of the list corresponds to one batch of samples from each step in an epoch.
-    print(f'(Validation epoch end) Output: {outputs}')
-    print(f'(Validation epoch end) Output label: {outputs[0]}')
+    #print(f'(Validation epoch end) Output: {outputs}')
+    #print(f'(Validation epoch end) Output label: {outputs[0]}')
     
     # Calcular el promedio del loss
     avg_loss = sum([x['val_loss'].cpu() for x in outputs]) / len(outputs)
-    print(f'(Validation epoch end) Avg loss: {avg_loss}')
+    #print(f'(Validation epoch end) Avg loss: {avg_loss}')
     #avg_loss = outputs['val_loss'].mean() # se usaba cuando validation_step devolvía un EvalResult
     
     # Calcular la predicción haciendo argmax de los logits
     predictions = [torch.argmax(x['logits'],axis=-1) for x in outputs]
-    print(f'(Validation epoch end) Predictions: {predictions}')
+    #print(f'(Validation epoch end) Predictions: {predictions}')
     #predictions = torch.argmax(outputs['logits'],axis=-1)
     
     # Calcular cuantos aciertos han habido (accuracy)

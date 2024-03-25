@@ -1,6 +1,4 @@
 import pytorch_lightning as pl
-#from pytorch_lightning.core.step_result import TrainResult,EvalResult # deprecated
-#from pytorch_lightning import Trainer # not used
 from torch.utils.data import SequentialSampler,RandomSampler
 from torch import nn
 import numpy as np
@@ -82,11 +80,9 @@ class MCQAModel(pl.LightningModule):
       inputs[key] = inputs[key].to(self.args["device"])
     logits = self(**inputs)
     loss = self.ce_loss(logits,labels)
-    #result = TrainResult(loss) # deprecated
-    #result.log('train_loss', loss, on_epoch=True) # deprecated
-    # # Log metrics directly using self.log
+    # Log metrics directly using self.log
     self.log('train_loss', loss, on_epoch=True)
-    return loss # Previously: return result (TrainResult). Now there is no need to return a result object
+    return loss
   
   def test_step(self, batch, batch_idx):
     inputs,labels = batch
@@ -94,14 +90,8 @@ class MCQAModel(pl.LightningModule):
       inputs[key] = inputs[key].to(self.args["device"])
     logits = self(**inputs)
     loss = self.ce_loss(logits,labels)
-    #result = EvalResult(loss) # deprecated
-    #result.log('test_loss', loss, on_epoch=True) # deprecated
-    #result.log('logits',logits,on_epoch=True) # deprecated
-    #result.log('labels',labels,on_epoch=True) # deprecated
     
     self.log('test_loss', loss, on_epoch=True)
-    #self.log('logits',logits,on_epoch=True) # TODO, es necesario loggear los logits?
-    #self.log('labels',labels,on_epoch=True) # TODO, es necesario loggear los labels?
     return {'val_loss': loss, 'logits': logits, 'labels': labels} # Previously: return result (EvalResult). Now there is no need to return a result object
  
   def test_epoch_end(self, outputs):
@@ -131,39 +121,19 @@ class MCQAModel(pl.LightningModule):
     # Move to self.args['device']
     for key in inputs:
       inputs[key] = inputs[key].to(self.args['device'])
-    #print(f'(Validation step) Input["input_ids"] length: {len(inputs["input_ids"])}')
-    #print(f'(Validation step) Input["input_ids"]: {inputs["input_ids"]}')
     logits = self(**inputs) # calls forward
-    #print(f'(Validation step) Batch size: {len(inputs["input_ids"])}')
-    #print(f'(Validation step) logits {logits.data.cpu().numpy()}')
-    #print(f'(Validation step) labels {labels}')
-    #print(f'(Validation step) Number of logits: {len(logits)}')
-    #print(f'(Validation step) Number of labels: {len(labels)}')
-    #assert len(logits) == len(labels)
     loss = self.ce_loss(logits,labels)
-    #result = EvalResult(loss) # deprecated
-    #result.log('val_loss', loss, on_epoch=True) # deprecated
-    #result.log('logits',logits,on_epoch=True) # deprecated
-    #result.log('labels',labels,on_epoch=True) # deprecated
     self.log('val_loss', loss, on_epoch=True)
-    #self.log('logits',logits.data.cpu().numpy().tolist(),on_epoch=True) # .data.cpu().numpy() to get only the values # TODO, es necesario loggear los logits?
-    #self.log('labels',labels,on_epoch=True) # TODO, es necesario loggear los labels?
     return {'val_loss': loss, 'logits': logits, 'labels': labels} # Previously: return result (EvalResult). Now there is no need to return a result object.
 
   def validation_epoch_end(self, outputs):
     # 'outputs' is a list of whatever you returned in `validation_step`. Each element of the list corresponds to one batch of samples from each step in an epoch.
-    #print(f'(Validation epoch end) Output: {outputs}')
-    #print(f'(Validation epoch end) Output label: {outputs[0]}')
     
     # Calcular el promedio del loss
     avg_loss = sum([x['val_loss'].cpu() for x in outputs]) / len(outputs)
-    #print(f'(Validation epoch end) Avg loss: {avg_loss}')
-    #avg_loss = outputs['val_loss'].mean() # se usaba cuando validation_step devolvía un EvalResult
     
     # Calcular la predicción haciendo argmax de los logits
     predictions = [torch.argmax(x['logits'],axis=-1) for x in outputs]
-    #print(f'(Validation epoch end) Predictions: {predictions}')
-    #predictions = torch.argmax(outputs['logits'],axis=-1)
     
     # Calcular cuantos aciertos han habido (accuracy)
     correct_predictions = 0
@@ -174,12 +144,6 @@ class MCQAModel(pl.LightningModule):
     total_number_of_predictions = each_prediction_size * predictions_length
     accuracy = correct_predictions.cpu().detach().numpy() / total_number_of_predictions
 
-    #labels = outputs['labels']
-    #correct_predictions = torch.sum(predictions==labels)
-    #accuracy = correct_predictions.cpu().detach().numpy()/predictions.size()[0]
-    
-    #result = EvalResult(checkpoint_on=avg_loss,early_stop_on=avg_loss) # deprecated
-    #result.log_dict({"val_loss":avg_loss,"val_acc":accuracy},prog_bar=True,on_epoch=True) # deprecated
     self.log_dict({"val_loss":avg_loss,"val_acc":accuracy},prog_bar=True,on_epoch=True)
     self.log('avg_val_loss', avg_loss)
     self.log('avg_val_acc', accuracy)
@@ -198,19 +162,12 @@ class MCQAModel(pl.LightningModule):
     expanded_batch = []
     labels = []
     context = None
-    #print(f'(Proccess batch) Batch size: {len(batch)}')
-    #print(f'(Proccess batch) Batch: {batch}')
     for data_tuple in batch:
-      #print(f'(Proccess batch) Data tuple: {data_tuple}')
       if len(data_tuple) == 4:
         context,question,options,label = data_tuple
       else:
         question,options,label = data_tuple
-        #print(f'(Proccess batch) Question: {question}')
-        #print(f'(Proccess batch) Options: {options}')
-        #print(f'(Proccess batch) Label: {label}')
       question_option_pairs = [question + tokenizer.sep_token + option if type(option) != float and type(option) != np.float64 else question +"" for option in options]
-      #print(f'(Proccess batch) Question option pairs: {question_option_pairs}')
       
 
       labels.append(label)
@@ -220,9 +177,6 @@ class MCQAModel(pl.LightningModule):
         expanded_batch.extend(zip(contexts,question_option_pairs))
       else:
         expanded_batch.extend(question_option_pairs)
-    #print(f'(Proccess batch) Expanded batch length: {len(expanded_batch)}')
-    #print(f'(Proccess batch) Expanded batch: {expanded_batch}')
-    #print(f'(Proccess batch) Labels length: {len(labels)}')
     tokenized_batch = tokenizer(expanded_batch,truncation=True,padding="max_length",max_length=max_len,return_tensors="pt")
 
     return tokenized_batch,torch.tensor(labels)

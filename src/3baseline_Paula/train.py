@@ -56,18 +56,18 @@ def train(gpu,
     test_dataset = CasiMedicosDataset(args.test_csv,args.use_context)
     val_dataset = CasiMedicosDataset(args.dev_csv,args.use_context)
 
-    early_stopping_callback = pl.callbacks.EarlyStopping(monitor='val_loss',
+    early_stopping_callback = pl.callbacks.EarlyStopping(monitor='val_acc',
                                     min_delta=0.00,
-                                    patience=2,#10,
+                                    patience=args.early_stopping_patience,
                                     verbose=True,
-                                    mode='min')
+                                    mode='max')
 
-    cp_callback = pl.callbacks.ModelCheckpoint(monitor='val_loss',
+    cp_callback = pl.callbacks.ModelCheckpoint(monitor='val_acc',
                                                #filepath=os.path.join(EXPERIMENT_FOLDER,experiment_string), # deprecated
                                                dirpath=os.path.join(EXPERIMENT_FOLDER,experiment_string),
                                                save_top_k=1,
                                                save_weights_only=False,
-                                               mode='min')
+                                               mode='max')
 
     # Load pretrained model
     mcqaModel = MCQAModel(model_name_or_path=args.pretrained_model_name,
@@ -86,7 +86,8 @@ def train(gpu,
         logger=[wb,csv_log],
         callbacks= [early_stopping_callback,cp_callback],
         #resume_from_checkpoint=pretrained_model,
-        max_epochs=args.num_epochs
+        max_epochs=args.num_epochs,                          # EPOCHS
+        accumulate_grad_batches=args.accumulate_grad_batches # Gradient accumulation
     )
     
     # Start training
@@ -172,7 +173,7 @@ if __name__ == "__main__":
     args = Arguments(train_csv=os.path.join(DATASET_FOLDER, "en.train_casimedicos.jsonl"),
                     test_csv=os.path.join(DATASET_FOLDER, "en.test_casimedicos.jsonl"),
                     dev_csv=os.path.join(DATASET_FOLDER, "en.dev_casimedicos.jsonl"),
-                    incorrect_ans = 0, # TODO, esto es de Paula, no del original
+                    #incorrect_ans = 0, # TODO, esto es de Paula, no del original
                     pretrained_model_name=PRETRAINED_MODEL,
                     use_context=cmd_args.use_context)
     

@@ -209,7 +209,7 @@ class MCQAModel(pl.LightningModule):
         #print(f'(Proccess batch) Question: {question}')
         #print(f'(Proccess batch) Options: {options}')
         #print(f'(Proccess batch) Label: {label}')
-      question_option_pairs = [question+' '+ option if type(option) != float and type(option) != np.float64 else question +" " for option in options]
+      question_option_pairs = [question + tokenizer.sep_token + option if type(option) != float and type(option) != np.float64 else question +"" for option in options]
       #print(f'(Proccess batch) Question option pairs: {question_option_pairs}')
       
 
@@ -223,7 +223,7 @@ class MCQAModel(pl.LightningModule):
     #print(f'(Proccess batch) Expanded batch length: {len(expanded_batch)}')
     #print(f'(Proccess batch) Expanded batch: {expanded_batch}')
     #print(f'(Proccess batch) Labels length: {len(labels)}')
-    tokenized_batch = tokenizer.batch_encode_plus(expanded_batch,truncation=True,padding="max_length",max_length=max_len,return_tensors="pt")
+    tokenized_batch = tokenizer(expanded_batch,truncation=True,padding="max_length",max_length=max_len,return_tensors="pt")
 
     return tokenized_batch,torch.tensor(labels)
   

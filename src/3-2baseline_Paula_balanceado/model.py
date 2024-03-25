@@ -71,7 +71,7 @@ class MCQAModel(pl.LightningModule):
     pooled_output = outputs[1]
     pooled_output = self.dropout(pooled_output)
     logits = self.linear(pooled_output)
-    reshaped_logits = logits.view(-1,self.args['num_choices']) # Convierte a la forma (batch_size,num_choices); es decir, un tensor de 2 dimensiones de batch_size filas y num_choices columnas
+    reshaped_logits = logits.view(-1,self.args['num_choices'] * 5) # Convierte a la forma (batch_size,num_choices x combinations_of_correct_option); es decir, un tensor de 2 dimensiones de batch_size filas y num_choices columnas
     return reshaped_logits
   
   def training_step(self,batch,batch_idx):
@@ -160,36 +160,42 @@ class MCQAModel(pl.LightningModule):
   
   def process_batch(self,batch,tokenizer,max_len=32):
     '''
-    For instance in the batch, generates all possible combinations of question and options.
+    For instance in the batch, generates de same instance with the correct option in different positions.
+    Then, each of this instances is separated in question-option pairs.
+    
+    For each original instance (example, correct option A):
+      - <s>question</s>(correct option)</s>(incorrect option)</s>(incorrect option)</s>(incorrect option)</s>(incorrect option)</s>
+        - x5 (question-option pairs)
+      - <s>question</s>(incorrect option)</s>(correct option)</s>(incorrect option)</s>(incorrect option)</s>(incorrect option)</s>
+        - x5 (question-option pairs)
+      - <s>question</s>(incorrect option)</s>(incorrect option)</s>(correct option)</s>(incorrect option)</s>(incorrect option)</s>
+        - x5 (question-option pairs)
+      - <s>question</s>(incorrect option)</s>(incorrect option)</s>(incorrect option)</s>(correct option)</s>(incorrect option)</s>
+        - x5 (question-option pairs)
+      - <s>question</s>(incorrect option)</s>(incorrect option)</s>(incorrect option)</s>(incorrect option)</s>(correct option)</s>
+        - x5 (question-option pairs)
 
-    Instance: (question, [options], label)
-    - Combination 1: <s>question</s>opa</s>
-    - Combination 2: <s>question</s>opb</s>
-    - Combination 3: <s>question</s>opc</s>
-    - Combination 4: <s>question</s>opd</s>
-    - Combination 5: <s>question</s>ope</s> 
+    Total inputs generated: 25 per example
     '''
     expanded_batch = []
     labels = []
-    context = None
-    for data_tuple in batch:
-      if len(data_tuple) == 4:
-        context,question,options,label = data_tuple
-      else:
-        question,options,label = data_tuple
-      question_option_pairs = [
-        question + 
-        tokenizer.sep_token + 
-        option if type(option) != float and type(option) != np.float64 else question +"" for option in options
-      ]
-      
-      labels.append(label)
 
-      if context:
-        contexts = [context]*len(options)
-        expanded_batch.extend(zip(contexts,question_option_pairs))
-      else:
-        expanded_batch.extend(question_option_pairs)
+    for data_tuple in batch:
+      question,options,label = data_tuple
+
+      correct_option = options[label]
+
+      for i in range(len(options)):
+        incorrect_options = [option for index, option in enumerate(options) if index != label]
+        np.random.shuffle(incorrect_options)
+        for j in range(len(options)):
+          if i == j:
+            expanded_batch.append(question + tokenizer.sep_token + correct_option)
+          if i != j:
+            expanded_batch.append(question + tokenizer.sep_token + incorrect_options.pop(0))
+        
+      labels.append(label)
+    
     tokenized_batch = tokenizer(expanded_batch,truncation=True,padding="max_length",max_length=max_len,return_tensors="pt")
 
     return tokenized_batch,torch.tensor(labels)

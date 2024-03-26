@@ -17,7 +17,7 @@ from transformers import AutoTokenizer, AutoModelForSequenceClassification, Trai
 logger = logging.getLogger(__name__)
 
 # Set up Weights & Biases
-os.environ["WANDB_PROJECT"] = "tfg-baseline"  # set the wandb project where this run will be logged
+os.environ["WANDB_PROJECT"] = "tfg-baseline-casimedicos"  # set the wandb project where this run will be logged
 os.environ["WANDB_LOG_MODEL"] = "false"  # do not upload the model to wandb
 
 

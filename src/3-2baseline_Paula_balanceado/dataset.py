@@ -88,3 +88,35 @@ class CasiMedicosDataset(Dataset):
     return_tuple+=(question, options, label)
     return return_tuple
   
+class CasiMedicosDatasetBalanced(Dataset):
+  '''
+  Author: Aingeru
+  '''  
+
+  def __init__(self,
+               jsonl_path,
+               use_context=False):
+    with open(jsonl_path, 'r') as file:
+      self.dataset = [json.loads(row) for row in file]
+    self.use_context = use_context # Aunque no lo vamos a utilizar
+
+  def __len__(self):
+    return len(self.dataset)
+
+  def __getitem__(self, index):
+    # Get instance of the dataset at the given index
+    instance = self.dataset[index]
+
+    return_tuple = tuple()
+    question = self.dataset[index]['question']
+    options = (
+      instance['options']["1"] if isinstance(instance['options']["1"], str) else "",
+      instance['options']["2"] if isinstance(instance['options']["2"], str) else "",
+      instance['options']["3"] if isinstance(instance['options']["3"], str) else "",
+      instance['options']["4"] if isinstance(instance['options']["4"], str) else "",
+      instance['options']["5"] if isinstance(instance['options']["5"], str) else ""
+    )
+    label = instance['correct_option'] - 1 # -1 because it has to be [0, 1, 2, 3, 4] and not [1, 2, 3, 4, 5]
+    return_tuple+=(question, options, label)
+    return return_tuple
+  

@@ -1,6 +1,6 @@
 from args import Arguments
 from model import MCQAModel
-from dataset import CasiMedicosDataset #MCQADataset4, MCQADataset5 # TODO no se utiliza, se podría borrar
+from dataset import CasiMedicosDatasetBalanced
 from pytorch_lightning.loggers import WandbLogger
 from pytorch_lightning.loggers import CSVLogger
 import pytorch_lightning as pl
@@ -22,7 +22,7 @@ Adaptado de:
 os.environ["WANDB_START_METHOD"] = "thread"
 os.environ["WANDB_LOG_MODEL"] = "false" # do not upload the model to wandb
 
-DATASET_FOLDER = "../../data/casiMedicos/JSONL"
+DATASET_FOLDER = "../../data/casiMedicos-balanced/JSONL"
 WB_PROJECT = "tfg-baseline-Paula"
 MODELS_FOLDER = "/home/shared/esperimentuak/AingeruTFG/TFG/models/baseline_Paula"
 PRETRAINED_MODEL = "/home/shared/esperimentuak/AingeruTFG/TFG/models/eriberta_libre/"
@@ -52,9 +52,9 @@ def train(gpu,
     csv_log = CSVLogger(models_folder, name=experiment_name, version=version)
 
     # Load train, test and val datasets
-    train_dataset = CasiMedicosDataset(args.train_csv,args.use_context)
-    test_dataset = CasiMedicosDataset(args.test_csv,args.use_context)
-    val_dataset = CasiMedicosDataset(args.dev_csv,args.use_context)
+    train_dataset = CasiMedicosDatasetBalanced(args.train_csv,args.use_context)
+    test_dataset = CasiMedicosDatasetBalanced(args.test_csv,args.use_context)
+    val_dataset = CasiMedicosDatasetBalanced(args.dev_csv,args.use_context)
 
     early_stopping_callback = pl.callbacks.EarlyStopping(monitor='val_acc',
                                     min_delta=0.00,
@@ -181,7 +181,7 @@ if __name__ == "__main__":
     current_datetime = datetime.datetime.now()
     formatted_datetime = current_datetime.strftime("%Y-%m-%d-%H-%M")
     #exp_name = f"{model}@@@{os.path.basename(DATASET_FOLDER)}@@@use_context{str(cmd_args.use_context)}@@@data{str(args.train_csv)}@@@seqlen{str(args.max_len)}@@@execTime{str(formatted_datetime)}".replace("/","_")
-    exp_name = f"{model}@@@{os.path.basename(DATASET_FOLDER)}@@@data{str(args.train_csv)}@@@seqlen{str(args.max_len)}@@@execTime{str(formatted_datetime)}".replace("/","_")
+    exp_name = f"{model}___data{os.path.basename(args.train_csv)}___seqlen{str(args.max_len)}___execTime{str(formatted_datetime)}".replace("/","_")
 
     train(gpu=args.gpu,
         args=args,

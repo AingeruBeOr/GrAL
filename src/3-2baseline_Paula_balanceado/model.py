@@ -11,6 +11,7 @@ from torch.optim import AdamW
 from transformers import get_linear_schedule_with_warmup
 from transformers import AutoTokenizer,AutoModel
 import functools
+import wandb
 
 '''
 Adaptado de: https://github.com/paulaonta/medmcqa/blob/main/model_5ans.py
@@ -71,7 +72,7 @@ class MCQAModel(pl.LightningModule):
     pooled_output = outputs[1]
     pooled_output = self.dropout(pooled_output)
     logits = self.linear(pooled_output)
-    reshaped_logits = logits.view(-1,self.args['num_choices'] * 5) # Convierte a la forma (batch_size,num_choices x combinations_of_correct_option); es decir, un tensor de 2 dimensiones de batch_size filas y num_choices columnas
+    reshaped_logits = logits.view(-1,self.args['num_choices']) # Convierte a la forma (batch_size,num_choices x combinations_of_correct_option); es decir, un tensor de 2 dimensiones de batch_size filas y num_choices columnas
     return reshaped_logits
   
   def training_step(self,batch,batch_idx):
@@ -111,9 +112,16 @@ class MCQAModel(pl.LightningModule):
     total_number_of_predictions = each_prediction_size * predictions_length
     accuracy = correct_predictions.cpu().detach().numpy() / total_number_of_predictions
 
+    # Get the confusion matrix
+    labels = [x['labels'].cpu().detach().item() for x in outputs]
+    predictions = [x.cpu().detach().item() for x in predictions]
+    confusion_matrix = wandb.plot.confusion_matrix(probs=None, y_true=labels, preds=predictions, class_names=['A', 'B', 'C', 'D', 'E'])
+
     self.log_dict({"test_loss":avg_loss,"test_acc":accuracy},prog_bar=True,on_epoch=True)
     self.log('avg_test_loss', avg_loss)
     self.log('avg_test_acc', accuracy)
+    wandbLogger = self.loggers[0]
+    wandbLogger.log_metrics({"conf_matrix_test": confusion_matrix})
     return avg_loss # Previously: return result (EvalResult). Now there is no need to return a result object
   
   def validation_step(self, batch, batch_idx):
@@ -144,9 +152,17 @@ class MCQAModel(pl.LightningModule):
     total_number_of_predictions = each_prediction_size * predictions_length
     accuracy = correct_predictions.cpu().detach().numpy() / total_number_of_predictions
 
-    self.log_dict({"val_loss":avg_loss,"val_acc":accuracy},prog_bar=True,on_epoch=True)
+    # Get the confusion matrix
+    labels = [x['labels'].cpu().detach().item() for x in outputs]
+    predictions = [x.cpu().detach().item() for x in predictions]
+    confusion_matrix = wandb.plot.confusion_matrix(probs=None, y_true=labels, preds=predictions, class_names=['A', 'B', 'C', 'D', 'E'])
+
+    # Logging
+    self.log_dict({"val_loss": avg_loss, "val_acc": accuracy}, prog_bar=True, on_epoch=True)
     self.log('avg_val_loss', avg_loss)
     self.log('avg_val_acc', accuracy)
+    wandbLogger = self.loggers[0]
+    wandbLogger.log_metrics({"conf_matrix": confusion_matrix})
     return avg_loss # Previously: return result (EvalResult). Now there is no need to return a result object
         
   def configure_optimizers(self):
@@ -160,42 +176,36 @@ class MCQAModel(pl.LightningModule):
   
   def process_batch(self,batch,tokenizer,max_len=32):
     '''
-    For instance in the batch, generates de same instance with the correct option in different positions.
-    Then, each of this instances is separated in question-option pairs.
-    
-    For each original instance (example, correct option A):
-      - <s>question</s>(correct option)</s>(incorrect option)</s>(incorrect option)</s>(incorrect option)</s>(incorrect option)</s>
-        - x5 (question-option pairs)
-      - <s>question</s>(incorrect option)</s>(correct option)</s>(incorrect option)</s>(incorrect option)</s>(incorrect option)</s>
-        - x5 (question-option pairs)
-      - <s>question</s>(incorrect option)</s>(incorrect option)</s>(correct option)</s>(incorrect option)</s>(incorrect option)</s>
-        - x5 (question-option pairs)
-      - <s>question</s>(incorrect option)</s>(incorrect option)</s>(incorrect option)</s>(correct option)</s>(incorrect option)</s>
-        - x5 (question-option pairs)
-      - <s>question</s>(incorrect option)</s>(incorrect option)</s>(incorrect option)</s>(incorrect option)</s>(correct option)</s>
-        - x5 (question-option pairs)
+    For instance in the batch, generates all possible combinations of question and options.
 
-    Total inputs generated: 25 per example
+    Instance: (question, [options], label)
+    - Combination 1: <s>question</s>opa</s>
+    - Combination 2: <s>question</s>opb</s>
+    - Combination 3: <s>question</s>opc</s>
+    - Combination 4: <s>question</s>opd</s>
+    - Combination 5: <s>question</s>ope</s> 
     '''
     expanded_batch = []
     labels = []
-
+    context = None
     for data_tuple in batch:
-      question,options,label = data_tuple
-
-      correct_option = options[label]
-
-      for i in range(len(options)):
-        incorrect_options = [option for index, option in enumerate(options) if index != label]
-        np.random.shuffle(incorrect_options)
-        for j in range(len(options)):
-          if i == j:
-            expanded_batch.append(question + tokenizer.sep_token + correct_option)
-          if i != j:
-            expanded_batch.append(question + tokenizer.sep_token + incorrect_options.pop(0))
-        
+      if len(data_tuple) == 4:
+        context,question,options,label = data_tuple
+      else:
+        question,options,label = data_tuple
+      question_option_pairs = [
+        question + 
+        tokenizer.sep_token + 
+        option if type(option) != float and type(option) != np.float64 else question +"" for option in options
+      ]
+      
       labels.append(label)
-    
+
+      if context:
+        contexts = [context]*len(options)
+        expanded_batch.extend(zip(contexts,question_option_pairs))
+      else:
+        expanded_batch.extend(question_option_pairs)
     tokenized_batch = tokenizer(expanded_batch,truncation=True,padding="max_length",max_length=max_len,return_tensors="pt")
 
     return tokenized_batch,torch.tensor(labels)

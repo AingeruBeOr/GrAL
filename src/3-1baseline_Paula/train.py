@@ -1,15 +1,13 @@
 from args import Arguments
 from model import MCQAModel
-from dataset import CasiMedicosDataset #MCQADataset4, MCQADataset5 # TODO no se utiliza, se podría borrar
+from dataset import CasiMedicosDataset
 from pytorch_lightning.loggers import WandbLogger
 from pytorch_lightning.loggers import CSVLogger
 import pytorch_lightning as pl
 from pytorch_lightning import Trainer
 import torch,os
-import pandas as pd
 import json
 from tqdm import tqdm
-# from multiprocessing import Process # TODO no se utiliza, se podría borrar
 import time,argparse,datetime
 
 '''
@@ -33,9 +31,6 @@ def train(gpu,
           experiment_name,
           models_folder,
           version):
-    #experiment_name = "bert-base-uncased@@@@@@use_contextFalse@@@daata._content_medmcqa_data_train_MEDMCQA_orig.csv@@@seqlen192"
-    #pretrained_model = "./4ANSONLY_MIR_bert-base-uncased@@@@@@use_contextFalse@@@data._content_medmcqa_data_train_MEDMCQA_orig.csv@@@seqlen192/4ANSONLY_MIR_bert-base-uncased@@@@@@use_contextFalse@@@data._content_medmcqa_data_train_MEDMCQA_orig.csv@@@seqlen192-epoch=02-val_loss=1.33-val_acc=0.34.ckpt"
-
     pl.seed_everything(42)
 
     torch.cuda.init()
@@ -63,7 +58,6 @@ def train(gpu,
                                     mode='max')
 
     cp_callback = pl.callbacks.ModelCheckpoint(monitor='val_acc',
-                                               #filepath=os.path.join(EXPERIMENT_FOLDER,experiment_string), # deprecated
                                                dirpath=os.path.join(EXPERIMENT_FOLDER,experiment_string),
                                                save_top_k=1,
                                                save_weights_only=False,
@@ -110,32 +104,26 @@ def train(gpu,
     csv_log.log_metrics(test_results[0])
     
     # Persist test dataset predictions
-    #test_df = pd.read_csv(args.test_csv)
     test_set = []
     with open(args.test_csv, 'r') as file:
       test_set = [json.loads(row) for row in file]
     predictions = run_inference(inference_model,mcqaModel.test_dataloader(),args)
     for instance, prediction in zip(test_set, predictions):
       instance['prediction'] = prediction.item() # numpy.int64 to int to be able to serialize to json
-    #test_df.loc[:,"predictions"] = [pred for pred in run_inference(inference_model,mcqaModel.test_dataloader(),args)]
     with open(os.path.join(EXPERIMENT_FOLDER, 'test_predictions.jsonl'), 'w') as file:
         for instance in test_set:
             file.write(json.dumps(instance) + '\n')
-    #test_df.to_csv(os.path.join(EXPERIMENT_FOLDER,"test_results.csv"),index=False)
     print(f"Test predictions written to {os.path.join(EXPERIMENT_FOLDER, 'test_predictions.jsonl')}")
 
-    #val_df = pd.read_csv(args.dev_csv)
     val_set = []
     with open(args.dev_csv, 'r') as file:
         val_set = [json.loads(row) for row in file]
     predictions = run_inference(inference_model,mcqaModel.val_dataloader(),args)
     for instance, prediction in zip(val_set, predictions):
         instance['prediction'] = prediction.item() # numpy.int64 to int to be able to serialize to json
-    #val_df.loc[:,"predictions"] = [pred for pred in run_inference(inference_model,mcqaModel.val_dataloader(),args)]
     with open(os.path.join(EXPERIMENT_FOLDER, 'dev_predictions.jsonl'), 'w') as file:
         for instance in val_set:
             file.write(json.dumps(instance) + '\n')
-    #val_df.to_csv(os.path.join(EXPERIMENT_FOLDER,"dev_results.csv"),index=False)
     print(f"Val predictions written to {os.path.join(EXPERIMENT_FOLDER, 'dev_predictions.jsonl')}")
 
     del mcqaModel
@@ -146,7 +134,6 @@ def train(gpu,
 def run_inference(model,dataloader,args):
     predictions = []
     for idx,(inputs,labels) in tqdm(enumerate(dataloader)):
-        # batch_size = len(labels) # TODO, no se usa, se podría borrar
         for key in inputs.keys():
             inputs[key] = inputs[key].to(args.device)
         with torch.no_grad(): # Don't store the gradients. As we are not doing backpropagation in inference, there is no need to save them
@@ -173,15 +160,12 @@ if __name__ == "__main__":
     args = Arguments(train_csv=os.path.join(DATASET_FOLDER, "en.train_casimedicos.jsonl"),
                     test_csv=os.path.join(DATASET_FOLDER, "en.test_casimedicos.jsonl"),
                     dev_csv=os.path.join(DATASET_FOLDER, "en.dev_casimedicos.jsonl"),
-                    #incorrect_ans = 0, # TODO, esto es de Paula, no del original
                     pretrained_model_name=PRETRAINED_MODEL,
                     use_context=cmd_args.use_context)
     
-    #exp_name = f"4_5_ANS_(1.b)_ckpt_{model}@@@{os.path.basename(exp_dataset_folder)}@@@use_context{str(cmd_args.use_context)}@@@data{str(args.train_csv)}@@@seqlen{str(args.max_len)}".replace("/","_") # La linea de abajo es la adaptación hecha por mí de lo de Paula
     current_datetime = datetime.datetime.now()
     formatted_datetime = current_datetime.strftime("%Y-%m-%d-%H-%M")
-    #exp_name = f"{model}@@@{os.path.basename(DATASET_FOLDER)}@@@use_context{str(cmd_args.use_context)}@@@data{str(args.train_csv)}@@@seqlen{str(args.max_len)}@@@execTime{str(formatted_datetime)}".replace("/","_")
-    exp_name = f"{model}@@@{os.path.basename(DATASET_FOLDER)}@@@data{str(args.train_csv)}@@@seqlen{str(args.max_len)}@@@execTime{str(formatted_datetime)}".replace("/","_")
+    exp_name = f"{model}___data{os.path.basename(args.train_csv)}___seqlen{str(args.max_len)}___execTime{str(formatted_datetime)}".replace("/","_")
 
     train(gpu=args.gpu,
         args=args,

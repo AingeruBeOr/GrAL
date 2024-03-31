@@ -11,6 +11,7 @@ from torch.optim import AdamW
 from transformers import get_linear_schedule_with_warmup
 from transformers import AutoTokenizer,AutoModel
 import functools
+import wandb
 
 '''
 Adaptado de: https://github.com/paulaonta/medmcqa/blob/main/model_5ans.py
@@ -111,9 +112,17 @@ class MCQAModel(pl.LightningModule):
     total_number_of_predictions = each_prediction_size * predictions_length
     accuracy = correct_predictions.cpu().detach().numpy() / total_number_of_predictions
 
+    # Get the confusion matrix
+    labels = [x['labels'].cpu().detach().item() for x in outputs]
+    predictions = [x.cpu().detach().item() for x in predictions]
+    confusion_matrix = wandb.plot.confusion_matrix(probs=None, y_true=labels, preds=predictions, class_names=['A', 'B', 'C', 'D', 'E'])
+
+    # Logging
     self.log_dict({"test_loss":avg_loss,"test_acc":accuracy},prog_bar=True,on_epoch=True)
     self.log('avg_test_loss', avg_loss)
     self.log('avg_test_acc', accuracy)
+    wandbLogger = self.loggers[0]
+    wandbLogger.log_metrics({"conf_matrix_test": confusion_matrix})
     return avg_loss # Previously: return result (EvalResult). Now there is no need to return a result object
   
   def validation_step(self, batch, batch_idx):
@@ -144,9 +153,17 @@ class MCQAModel(pl.LightningModule):
     total_number_of_predictions = each_prediction_size * predictions_length
     accuracy = correct_predictions.cpu().detach().numpy() / total_number_of_predictions
 
+    # Get the confusion matrix
+    labels = [x['labels'].cpu().detach().item() for x in outputs]
+    predictions = [x.cpu().detach().item() for x in predictions]
+    confusion_matrix = wandb.plot.confusion_matrix(probs=None, y_true=labels, preds=predictions, class_names=['A', 'B', 'C', 'D', 'E'])
+
+    # Logging
     self.log_dict({"val_loss":avg_loss,"val_acc":accuracy},prog_bar=True,on_epoch=True)
     self.log('avg_val_loss', avg_loss)
     self.log('avg_val_acc', accuracy)
+    wandbLogger = self.loggers[0]
+    wandbLogger.log_metrics({"conf_matrix": confusion_matrix})
     return avg_loss # Previously: return result (EvalResult). Now there is no need to return a result object
         
   def configure_optimizers(self):

@@ -9,3 +9,6 @@ wandb/
 # Large files
 data/*
 models/*
+
+# Images
+imgs/*

@@ -93,8 +93,9 @@ def train(gpu, args, experiment_name, version):
         logger=[wb, csv_log],
         callbacks= [early_stopping_callback, cp_callback],
         #resume_from_checkpoint=pretrained_model,
-        max_epochs=args.num_epochs,                          # EPOCHS
-        accumulate_grad_batches=args.accumulate_grad_batches # Gradient accumulation
+        max_epochs=args.num_epochs,                           # EPOCHS
+        accumulate_grad_batches=args.accumulate_grad_batches, # Gradient accumulation
+        val_check_interval=args.val_check_interval,           # Validation check interval (how many batches to consider before running validation)
     )
     
     # Start training

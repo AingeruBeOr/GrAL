@@ -73,8 +73,8 @@ def check_lengths_casimedicos(model_path, data_files, dataloader, split, languag
     fig.update_layout(showlegend=False)
 
     # Save the plot
-    fig.write_image(str(BASE_PATH / 'imgs' / f'length_distribution.{language}.{split}.png'))
-    fig.write_html(str(BASE_PATH / 'imgs' / f'length_distribution.{language}.{split}.html'))
+    fig.write_image(str(BASE_PATH / 'imgs' / f'CasiMedicos_length_distribution.{language}.{split}.png'))
+    fig.write_html(str(BASE_PATH / 'imgs' / f'CasiMedicos_length_distribution.{language}.{split}.html'))
 
     # Label distribution plot
     # Map 0-4 to the corresponding labels: A, B, C, D, E
@@ -86,8 +86,8 @@ def check_lengths_casimedicos(model_path, data_files, dataloader, split, languag
         category_orders={'label': ['A', 'B', 'C', 'D', 'E']},
     )
     fig.update_layout(xaxis_title='Label', yaxis_title='Count')
-    fig.write_image(str(BASE_PATH / 'imgs' / f'label_distribution.{language}.{split}.png'))
-    fig.write_html(str(BASE_PATH / 'imgs' / f'label_distribution.{language}.{split}.html'))
+    fig.write_image(str(BASE_PATH / 'imgs' / f'CasiMedicos_label_distribution.{language}.{split}.png'))
+    fig.write_html(str(BASE_PATH / 'imgs' / f'CasiMedicos_label_distribution.{language}.{split}.html'))
 
 
 if __name__ == '__main__':

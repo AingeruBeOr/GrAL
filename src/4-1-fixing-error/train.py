@@ -1,6 +1,6 @@
 from args import Arguments
 from model import MCQAModel
-from dataset import MedMCQAAndCasiMedicosDataset, CasiMedicosDatasetBalanced
+from dataset import CasiMedicosDatasetBalanced, FixingErrorDataset
 from pytorch_lightning.loggers import WandbLogger
 from pytorch_lightning.loggers import CSVLogger
 import pytorch_lightning as pl
@@ -46,9 +46,9 @@ def train(gpu, args, experiment_name, version):
     csv_log = CSVLogger(MODELS_FOLDER, name=experiment_name, version=version)
 
     # Load train, test and val datasets
-    train_dataset = MedMCQAAndCasiMedicosDataset(
-        casimedicos_dataset_path=args.train_csv, 
-        medmcqa_dataset_path='../../data/MedMCQA-balanced/train.json',
+    train_dataset = FixingErrorDataset(
+        jsonl_path_casimedicos=args.train_csv, 
+        jsonl_path_medmcqa='../../data/MedMCQA-balanced/train.json',
         use_context=args.use_context
     )
     test_dataset = CasiMedicosDatasetBalanced(args.test_csv, args.use_context)

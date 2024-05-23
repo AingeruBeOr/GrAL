@@ -41,7 +41,7 @@ class MCQAModel(pl.LightningModule):
     self.batch_size = self.args['batch_size']
     self.dropout = nn.Dropout(self.args['hidden_dropout_prob'])
     self.linear = nn.Linear(in_features=self.args['hidden_size'], out_features=1)
-    self.ce_loss = nn.CrossEntropyLoss()
+    self.ce_loss = nn.CrossEntropyLoss(reduction='sum') # This was previosuly 'mean'
     self.save_hyperparameters()
     
   

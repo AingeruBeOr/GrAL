@@ -14,11 +14,11 @@ class Arguments:
     test_csv:str                                            # Path to the test CSV file # TODO el nuestro es JSONL
     dev_csv:str                                             # Path to the dev CSV file # TODO el nuestro es JSONL
     max_len:int = 400                                       # Max length of the maximum possible input (maximum value: 512)
-    num_epochs:int = 3                                      # EPOCHS
-    batch_size:int = 3                                      # Batch size
-    accumulate_grad_batches:int = 1365                      # Gradient accumulation
+    num_epochs:int = 10                                     # EPOCHS
+    batch_size:int = 2                                      # Batch size
+    accumulate_grad_batches:int = 1                         # Gradient accumulation
     learning_rate:float = 5e-5                              # Learning rate
-    val_check_interval:int = 100                            # Validation check interval (how many batches to consider before running validation). It has to be greater than the steps before backpropagation. Caution! It can be tricky to set this parameter.
+    val_check_interval:int | float = 1.0                    # Validation check interval (how many batches to consider before running validation). Default: 1.0 (float). It has to be greater than the steps before backpropagation. Caution! It can be tricky to set this parameter.
     log_every_n_steps:int = 1                               # Log every n steps
     #checkpoint_batch_size:int = 32
     early_stopping_patience:int = 20                        # Early stopping patience

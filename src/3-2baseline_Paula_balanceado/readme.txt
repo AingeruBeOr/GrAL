@@ -18,3 +18,15 @@ Instancia:
         - ...(+5)
     - Instancia con respuesta correcta en E.
         - ...(+5)
+
+# Sweeps with wandb
+
+1. Generar un .yaml
+2. Crear un sweep: wandb sweep --project <project_name> <YAML file>. Este nos devuleve el 'sweep_ID'
+3. Start an agent: wandb agent <entity>/<project_name>/<sweep_ID>
+
+El sweep está mal y está en el proyecto 'tfg-baseline-casimedicos-synthetic' de WANDB.
+
+# Upload local runs to WANDB
+
+Example: wandb sync -p tfg-baseline-casimedicos-synthetic *

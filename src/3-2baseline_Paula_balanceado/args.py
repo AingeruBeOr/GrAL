@@ -11,16 +11,16 @@ class Arguments:
     dev_csv:str                                             # Path to the dev CSV file # TODO el nuestro es JSONL
     #incorrect_ans:int
     batch_size:int = 1                                      # Batch size # Antes era 4
-    accumulate_grad_batches:int = 12                         # Gradient accumulation
+    accumulate_grad_batches:int = 2                         # Gradient accumulation
     max_len:int = 400                                       # Max length of the maximum possible input (maximum value: 512)
     #checkpoint_batch_size:int = 32
     early_stopping_patience:int = 10                        # Early stopping patience
     print_freq:int = 100
     pretrained_model_name:str = "bert-base-uncased"         # Pretrained model
-    learning_rate:float = 2e-4                              # Learning rate
+    learning_rate:float = 5e-5                              # Learning rate
     hidden_dropout_prob:float =0.4                          # Dropout
     hidden_size:int=768#512#768                             # Tamaño de la capa oculta
-    num_epochs:int = 30                                     # EPOCHS # Antes era 5
+    num_epochs:int = 10                                     # EPOCHS # Antes era 5
     num_choices:int = 5                                     # Opciones posibles en las respuestas
     device:str='cuda'
     gpu=0                                                   # '0,1' # a lo que esté establecido en CUDA_VISIBLE_DEVICES. Aunque si está establecido a 1, como solo es visible la 1 también hay que poner 0. Si estuvieran en CUDA_VISIBLE_DEVICES las dos, podríamos elegir

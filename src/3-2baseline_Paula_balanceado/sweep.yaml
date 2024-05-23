@@ -1,0 +1,13 @@
+program: hyperparam_search.py
+name: sweep
+method: bayes
+metric:
+  name: val_acc
+  goal: maximize
+parameters:
+  accumulate_grad_batches:
+    values: [1, 2, 4]
+  learning_rate:
+    values: [2e-4, 5e-5, 1e-5]
+  num_epochs:
+    values: [10, 20, 30]

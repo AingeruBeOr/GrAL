@@ -23,8 +23,8 @@ os.environ["WANDB_START_METHOD"] = "thread"
 os.environ["WANDB_LOG_MODEL"] = "false" # do not upload the model to wandb
 
 DATASET_FOLDER = "../../data/casiMedicos-balanced/JSONL"
-WB_PROJECT = "tfg-baseline-Paula"
-MODELS_FOLDER = "/home/shared/esperimentuak/AingeruTFG/TFG/models/baseline_Paula"
+WB_PROJECT = "tfg-baseline-Paula-synthetic"
+MODELS_FOLDER = "/home/shared/esperimentuak/AingeruTFG/TFG/models/baseline_Paula_synthetic"
 PRETRAINED_MODEL = "/home/shared/esperimentuak/AingeruTFG/TFG/models/eriberta_libre/"
 
 def train(gpu,

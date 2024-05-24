@@ -5,9 +5,9 @@ import numpy as np
 import os
 
 SETS_PATH = [
-    '../../data/casiMedicos/JSONL/en.train_casimedicos.jsonl',
-    '../../data/casiMedicos/JSONL/en.test_casimedicos.jsonl',
-    '../../data/casiMedicos/JSONL/en.dev_casimedicos.jsonl'
+    '../../data/casiMedicos/JSONL/es.train_casimedicos.jsonl',
+    '../../data/casiMedicos/JSONL/es.test_casimedicos.jsonl',
+    '../../data/casiMedicos/JSONL/es.dev_casimedicos.jsonl'
 ]
 
 for set_path in SETS_PATH:

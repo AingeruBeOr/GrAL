@@ -104,53 +104,25 @@ def train(gpu, args:Arguments, experiment_name, version):
     inference_model = inference_model.eval()
     
     # Test the model on the test set using the best model
-    test_results = trainer.test(ckpt_path=best_checkpoint_model_path) # TODO, arreglar los argumentos de test
-    wb.log_metrics(test_results[0])
-    csv_log.log_metrics(test_results[0])
+    inference_datasets = [
+        os.path.join(args.dataset_folder, "es.dev_casimedicos.jsonl"),
+        os.path.join(args.dataset_folder, "es.test_casimedicos.jsonl"),
+        os.path.join(args.dataset_folder, "en.dev_casimedicos.jsonl"),
+        os.path.join(args.dataset_folder, "en.test_casimedicos.jsonl")
+    ]
+    for inference_dataset in inference_datasets:
+        mcqaModel.test_dataset = CasiMedicosDatasetBalanced(inference_dataset, args.use_context)
+        test_results = trainer.test(ckpt_path=best_checkpoint_model_path) # TODO, arreglar los argumentos de test
+        inference_type_metric_name = os.path.basename(inference_dataset).split('_')[0] + '_inference_accuracy'
+        wb.log_metrics({inference_type_metric_name: test_results[0]})
+        csv_log.log_metrics({inference_type_metric_name: test_results[0]})
     
-    # Persist test dataset predictions
-    test_set = []
-    with open(args.test_csv, 'r') as file:
-      test_set = [json.loads(row) for row in file]
-    predictions = run_inference(inference_model, mcqaModel.test_dataloader(), args)
-    for instance, prediction in zip(test_set, predictions):
-      instance['prediction'] = prediction.item() # numpy.int64 to int to be able to serialize to json
-    with open(os.path.join(EXPERIMENT_FOLDER, 'test_predictions.jsonl'), 'w') as file:
-        for instance in test_set:
-            file.write(json.dumps(instance) + '\n')
-    print(f"Test predictions written to {os.path.join(EXPERIMENT_FOLDER, 'test_predictions.jsonl')}")
-
-    # Persist val dataset predictions
-    val_set = []
-    with open(args.dev_csv, 'r') as file:
-        val_set = [json.loads(row) for row in file]
-    predictions = run_inference(inference_model, mcqaModel.val_dataloader(), args)
-    for instance, prediction in zip(val_set, predictions):
-        instance['prediction'] = prediction.item() # numpy.int64 to int to be able to serialize to json
-    with open(os.path.join(EXPERIMENT_FOLDER, 'dev_predictions.jsonl'), 'w') as file:
-        for instance in val_set:
-            file.write(json.dumps(instance) + '\n')
-    print(f"Val predictions written to {os.path.join(EXPERIMENT_FOLDER, 'dev_predictions.jsonl')}")
-
     # Free up memory
     del mcqaModel
     del inference_model
     del trainer
     torch.cuda.empty_cache()
     
-
-def run_inference(model,dataloader,args):
-    predictions = []
-    for idx,(inputs,labels) in tqdm(enumerate(dataloader)):
-        for key in inputs.keys():
-            inputs[key] = inputs[key].to(args.device)
-        with torch.no_grad(): # Don't store the gradients. As we are not doing backpropagation in inference, there is no need to save them
-            outputs = model(**inputs)
-        prediction_idxs = torch.argmax(outputs,axis=1).cpu().detach().numpy()
-        predictions.extend(list(prediction_idxs))
-    return predictions
-        
-
 
 if __name__ == "__main__":
 

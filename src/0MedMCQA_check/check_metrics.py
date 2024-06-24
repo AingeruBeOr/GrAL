@@ -2,8 +2,17 @@ import evaluate
 import json
 import sklearn.metrics as metrics
 
+'''
+This script checks the metrics computed by Huggingface-evaluate and Sklearn libraries
+
+This was done because the metrics computed by Huggingface-evaluate where quite strange
+
+Script:
+    1. Loads the confusion matrix from a json file
+'''
+
 # Cargar matriz de confusion
-with open('tmp.json', 'r') as file:
+with open('chech_metrics_example.json', 'r') as file:
     eval_pred = json.load(file)
 
 conf_matrix = eval_pred['eval_confusion_matrix']

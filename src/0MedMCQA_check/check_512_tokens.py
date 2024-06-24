@@ -64,18 +64,19 @@ df_dev = pd.DataFrame({'number_of_tokens': [len(instance) for instance in tokeni
 trace1 = go.Box(
     x=df_train['number_of_tokens'],
     name='Train',
-    boxpoints='all'
+    boxpoints='outliers'               # If 'outliers', show only the outliers points
 )
 
 # Crea el segundo boxplot
 trace2 = go.Box(
     x=df_dev['number_of_tokens'],
-    name='Dev',
-    boxpoints='all'
+    name='Validation',
+    boxpoints='outliers'               # If 'outliers', show only the outliers points
 )
 
 # Combina los boxplots en una sola figura
 data = [trace1, trace2]
+title = "Distribution of the number of tokens in the input (<s>Context</s>...)" if TYPE == 'with_context' else "Distribution of the number of tokens in the input"
 layout = go.Layout(title="Distribution of the number of tokens in the input (<s>Context</s>...)", xaxis_title="Number of tokens", yaxis_title="Split", xaxis=dict(type='log', autorange=True))
 
 fig = go.Figure(data=data, layout=layout)

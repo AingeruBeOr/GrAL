@@ -36,7 +36,7 @@ print(f"\n\nDev dataset class distribution: \n\n{dev_distribution}")
 
 plt.figure(1)
 plt.bar(train_distribution.keys(), train_distribution.values(), color='b')
-plt.title('Train dataset-aren erantzun zuzenen banaketa')
+plt.title('Train datu-sortaren erantzun zuzenen banaketa')
 plt.xlabel('Aukerak')
 for i, v in enumerate(train_distribution.values()):
     plt.text(i, v, str(v), ha='center', va='bottom')
@@ -44,7 +44,7 @@ plt.savefig('../../imgs/MedMCQA_train_class_distribution-eu.png')
 
 plt.figure(2)
 plt.bar(dev_distribution.keys(), dev_distribution.values(), color='r')
-plt.title('Dev dataset-aren erantzun zuzenen banaketa')
+plt.title('Validation datu-sortaren erantzun zuzenen banaketa')
 plt.xlabel('Aukerak')
 for i, v in enumerate(dev_distribution.values()):
     plt.text(i, v, str(v), ha='center', va='bottom')

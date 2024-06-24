@@ -6,7 +6,7 @@ from datasets import load_dataset
 import wandb
 import evaluate
 import numpy as np
-from variables import PATH_TO_MEDMCQA_TRAIN, PATH_TO_MEDMCQA_DEV, PATH_TO_ERIBERTA, PATH_TO_BASELINE_OUTPUT, PATH_TO_MEDMCQA_LOADER
+from variables import PATH_TO_MEDMCQA_TRAIN, PATH_TO_MEDMCQA_DEV, PATH_TO_ERIBERTA, PATH_TO_MEDMCQA_LOADER
 
 # https://huggingface.co/docs/transformers/main/en/tasks/sequence_classification
 
@@ -68,7 +68,7 @@ print("\tDeleted instances with more than 512 tokens from train dataset. Number 
 """
 
 ## 3. FINE-TUNE MODEL ##
-# Load model. Transformer with default classification head
+# Load model. Transformer with default classification head # info about architecture: https://github.com/huggingface/transformers/blob/b6c9f47fd6f911450024c52e382e544e5d04387a/src/transformers/models/roberta/modeling_roberta.py#L1154
 model = AutoModelForSequenceClassification.from_pretrained(PATH_TO_ERIBERTA, num_labels=4) 
 
 # Set evaluetaion function to be used during training (accuracy, f1, ...)
@@ -149,7 +149,9 @@ training_args = TrainingArguments(
     logging_dir=training_arguments['logging_dir'],                                   # directory for storing logs
     logging_steps=training_arguments['logging_steps'],                               # when to print log (and to evaluate if evaluation_strategy = 'steps')
     report_to=training_arguments['report_to'],                                       # report to Weights & Biases
-    
+
+    seed=training_arguments['seed'],                                                 # seed for reproducibility
+
     save_strategy=training_arguments['save_strategy'],                               # when to save each model checkpoint. It must be the same as 'evaluation_strategy' (porque guarda el modelo después de evaluarlo)
     save_steps=training_arguments['save_steps'],                                     # when to save each model checkpoint
     save_total_limit=training_arguments['save_total_limit'],                         # number of model checkpoints to keep
@@ -169,4 +171,7 @@ trainer = Trainer(
 )
 
 # FINE-TUNE MODEL #d#
-trainer.train()
+train_result = trainer.train()
+train_metrics = train_result.metrics
+trainer.log_metrics("train", train_metrics)
+trainer.save_metrics("train", train_metrics)

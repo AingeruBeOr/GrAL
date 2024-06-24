@@ -2,16 +2,15 @@ import logging
 import os
 import shutil
 import sys
-from dataclasses import dataclass, field
-from typing import Optional
-
+import ModelDataTrainingArguments
 import datasets
-import evaluate
-import numpy as np
-import transformers
-import wandb
 from datasets import load_dataset
+import evaluate
+import transformers
 from transformers import AutoTokenizer, AutoModelForSequenceClassification, Trainer, TrainingArguments, set_seed, HfArgumentParser
+import wandb
+import numpy as np
+import datetime
 
 # https://huggingface.co/docs/transformers/main/en/tasks/sequence_classification
 logger = logging.getLogger(__name__)
@@ -19,44 +18,6 @@ logger = logging.getLogger(__name__)
 # Set up Weights & Biases
 os.environ["WANDB_PROJECT"] = "tfg-baseline-casimedicos"  # set the wandb project where this run will be logged
 os.environ["WANDB_LOG_MODEL"] = "false"  # do not upload the model to wandb
-
-
-@dataclass
-class ModelDataTrainingArguments:
-    """
-    Arguments pertaining to what data we are going to input our model for training and eval.
-
-    Using `HfArgumentParser` we can turn this class
-    into argparse arguments to be able to specify them on
-    the command line.
-    """
-
-    model_name_or_path: str = field(
-        metadata={"help": "Path to pretrained model or model identifier from huggingface.co/models"}
-    )
-    data_loader: str = field(
-        metadata={"help": "Path to the data loader script."}
-    )
-    train_file: str = field(
-        metadata={"help": "File containing the training data."}
-    )
-    validation_file: str = field(
-        metadata={"help": "File containing the validation data."}
-    )
-    test_file: Optional[str] = field(default=None, metadata={"help": "File containing the test data."})
-
-    overwrite_cache: bool = field(
-        default=False, metadata={"help": "Overwrite the cached preprocessed datasets or not."}
-    )
-    pad_to_max_length: bool = field(
-        default=False,
-        metadata={
-            "help": (
-                "Whether to pad all samples to `max_seq_length`. "
-                "If False, will pad the samples dynamically when batching to the maximum length in the batch."
-            )
-        },
-    )
 
 
 def delete_more_than_512_tokens(dataset):
@@ -104,6 +65,14 @@ def main(training_arguments_path: str):
     model_data_args: ModelDataTrainingArguments
     training_args: TrainingArguments
     model_data_args, training_args = parser.parse_json_file(json_file=os.path.abspath(training_arguments_path))
+
+    # Create output directory with current timestamp
+    current_datetime = datetime.datetime.now()
+    formatted_datetime = current_datetime.strftime("%Y-%m-%d-%H-%M")
+    training_args.output_dir = training_args.output_dir + f"{formatted_datetime}"
+
+    # Save (Copy) the training arguments json in the output directory 
+    shutil.copyfile(training_arguments_path, training_args.output_dir + '/training_arguments.json')
 
     # Set up logger
     setup_logger(training_args)
@@ -259,16 +228,11 @@ def main(training_arguments_path: str):
     trainer.save_metrics("train", train_metrics)
     trainer.save_state()
 
-    # Save (Copy) the training arguments json in the output directory
-    shutil.copyfile(training_arguments_path, training_args.output_dir + '/training_arguments.json')
-
     logger.info("*** Evaluate ***")
     metrics = trainer.evaluate(eval_dataset=dataset['dev'])
     metrics["eval_samples"] = len(dataset['dev'])
     trainer.log_metrics("eval", metrics)
     trainer.save_metrics("eval", metrics)
-
-
 
 
 if __name__ == '__main__':

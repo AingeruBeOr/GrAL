@@ -1,4 +1,4 @@
-#  Arquitecturas sobre MedMCQA
+# Arquitecturas sobre MedMCQA
 
 ## Dataset
 

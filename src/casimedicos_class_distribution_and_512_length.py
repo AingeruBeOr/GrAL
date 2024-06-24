@@ -6,6 +6,10 @@ import plotly.io as pio
 from datasets import load_dataset
 from transformers import AutoTokenizer
 
+'''
+Author: Iker de la Iglesia
+'''
+
 # Default theme
 pio.templates.default = "plotly_white"
 

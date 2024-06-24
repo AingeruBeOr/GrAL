@@ -2,6 +2,14 @@ from tqdm import tqdm
 import matplotlib.pyplot as plt
 import json
 
+'''
+Checks the distribution of the classes (correct options: A-B-C-D-E) in the MedMCQA and CasiMedicos dataset (only train):
+
+Outputs:
+    - Console: Print the class distribution of the train and dev datasets
+    - PNG files: Plot a bar chart with the class distribution of the train and dev datasets
+'''
+
 DATASETS = [
     {
         'path': '../data/casiMedicos-balanced/JSONL/en.train_casimedicos.jsonl',

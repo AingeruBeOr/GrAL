@@ -21,11 +21,11 @@ class Arguments:
     pretrained_model:str = "/home/shared/esperimentuak/AingeruTFG/TFG/models/eriberta_libre"      # Pretrained model
 
     # Training arguments
-    train_csv:str = os.path.join(dataset_folder, "esen.train_casimedicos.jsonl") # Path to the training CSV file # TODO el nuestro es JSONL
-    test_csv:str = os.path.join(dataset_folder, "en.test_casimedicos.jsonl")     # Path to the test CSV file # TODO el nuestro es JSONL
-    dev_csv:str = os.path.join(dataset_folder, "en.dev_casimedicos.jsonl")       # Path to the dev CSV file # TODO el nuestro es JSONL
+    train_csv:str = os.path.join(dataset_folder, "es20en80.train_casimedicos.jsonl")   # Path to the training CSV file # TODO el nuestro es JSONL
+    test_csv:str = os.path.join(dataset_folder, "en.test_casimedicos.jsonl")           # Path to the test CSV file # TODO el nuestro es JSONL
+    dev_csv:str = os.path.join(dataset_folder, "es20en80.dev_casimedicos.jsonl")       # Path to the dev CSV file # TODO el nuestro es JSONL
     max_len:int = 400                                       # Max length of the maximum possible input (maximum value: 512)
-    num_epochs:int = 10                                     # EPOCHS
+    num_epochs:int = 30                                     # EPOCHS
     batch_size:int = 3                                      # Batch size
     accumulate_grad_batches:int = 3                         # Gradient accumulation
     learning_rate:float = 5e-5                              # Learning rate

@@ -1,13 +1,16 @@
 from dataclasses import dataclass, field
 from typing import Optional
 
+'''
+This class is used to define the arguments that will be used to train the model.
+'''
+
 @dataclass
 class ModelDataTrainingArguments:
     """
     Arguments pertaining to what data we are going to input our model for training and eval.
 
-    Using `HfArgumentParser` we can turn this class
-    into argparse arguments to be able to specify them on
+    Using `HfArgumentParser` we can turn this class into argparse arguments to be able to specify them on
     the command line.
     """
 

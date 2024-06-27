@@ -2,7 +2,10 @@ import logging
 import os
 import shutil
 import sys
-import ModelDataTrainingArguments
+
+import wandb.plot
+from ModelDataTrainingArguments import ModelDataTrainingArguments
+from eval_function import compute_metrics
 import datasets
 from datasets import load_dataset
 import evaluate
@@ -12,13 +15,13 @@ import wandb
 import numpy as np
 import datetime
 
-# https://huggingface.co/docs/transformers/main/en/tasks/sequence_classification
+'''
+This script is used to train a model using baseline architecture for the Casimedicos(en) dataset.
+
+https://huggingface.co/docs/transformers/main/en/tasks/sequence_classification
+'''
+
 logger = logging.getLogger(__name__)
-
-# Set up Weights & Biases
-os.environ["WANDB_PROJECT"] = "tfg-baseline-casimedicos"  # set the wandb project where this run will be logged
-os.environ["WANDB_LOG_MODEL"] = "false"  # do not upload the model to wandb
-
 
 def delete_more_than_512_tokens(dataset):
     """
@@ -71,8 +74,16 @@ def main(training_arguments_path: str):
     formatted_datetime = current_datetime.strftime("%Y-%m-%d-%H-%M")
     training_args.output_dir = training_args.output_dir + f"{formatted_datetime}"
 
-    # Save (Copy) the training arguments json in the output directory 
+    # Create directory and save (Copy) the training arguments json in this directory
+    os.makedirs(training_args.output_dir, exist_ok=False)
     shutil.copyfile(training_arguments_path, training_args.output_dir + '/training_arguments.json')
+
+    # Set up Weights & Biases
+    wandb.init(
+        project="tfg-baseline-casimedicos",
+        name=formatted_datetime,
+    )
+    os.environ["WANDB_LOG_MODEL"] = "false"  # do not upload the model to wandb
 
     # Set up logger
     setup_logger(training_args)
@@ -85,9 +96,9 @@ def main(training_arguments_path: str):
         path=model_data_args.data_loader,
         data_files={
             "train": model_data_args.train_file,
-            "dev": model_data_args.validation_file
+            "dev": model_data_args.validation_file,
+            "test": model_data_args.test_file
         },
-
     )
 
     # Get the labels
@@ -150,65 +161,6 @@ def main(training_arguments_path: str):
         label2id=label_to_id,
     )
 
-    # Set evaluetaion function to be used during training (accuracy, f1, ...)
-    accuracy = evaluate.load('accuracy')  # Load the accuracy function
-    f1 = evaluate.load('f1')  # Load the f-score function
-    precision = evaluate.load('precision')  # Load the precision function
-    recall = evaluate.load('recall')  # Load the recall function
-    cnf_matrix = evaluate.load('BucketHeadP65/confusion_matrix')  # Load the confusion matrix function
-
-    def compute_metrics(eval_pred):
-        predictions, labels = eval_pred
-        predictions = np.argmax(predictions, axis=1)
-        accuracy_value = accuracy.compute(predictions=predictions, references=labels)
-
-        f1_value_micro = f1.compute(predictions=predictions, references=labels, average='micro')
-        f1_value_macro = f1.compute(predictions=predictions, references=labels, average='macro')
-        f1_value_weighted = f1.compute(predictions=predictions, references=labels, average='weighted')
-        class_f1 = f1.compute(predictions=predictions, references=labels, average=None)
-
-        precision_value_micro = precision.compute(predictions=predictions, references=labels, average='micro')
-        precision_value_macro = precision.compute(predictions=predictions, references=labels, average='macro')
-        precision_value_weighted = precision.compute(predictions=predictions, references=labels, average='weighted')
-        class_precision = precision.compute(predictions=predictions, references=labels, average=None, zero_division='warn')
-
-        recall_value_micro = recall.compute(predictions=predictions, references=labels, average='micro')
-        recall_value_macro = recall.compute(predictions=predictions, references=labels, average='macro')
-        recall_value_weighted = recall.compute(predictions=predictions, references=labels, average='weighted')
-        class_recall = recall.compute(predictions=predictions, references=labels, average=None, zero_division='warn')
-
-        confusion_matrix_serializable = cnf_matrix.compute(predictions=predictions, references=labels)
-
-        #  Every element in the return dict, must be serializable so we log confusion_matrix (which is a plot object from wanbd library) independently to wandb
-        confusion_matrix = wandb.plot.confusion_matrix(probs=None, y_true=labels, preds=predictions, class_names=label_list)
-        wandb.log({'confusion_matrix': confusion_matrix})
-
-        return {
-            'accuracy': accuracy_value['accuracy'],
-            'f1_micro': f1_value_micro['f1'],
-            'f1_macro': f1_value_macro['f1'],
-            'f1_weighted': f1_value_weighted['f1'],
-            'f1_opa': class_f1['f1'][0],
-            'f1_opb': class_f1['f1'][1],
-            'f1_opc': class_f1['f1'][2],
-            'f1_opd': class_f1['f1'][3],
-            'precision_micro': precision_value_micro['precision'],
-            'precision_macro': precision_value_macro['precision'],
-            'precision_weighted': precision_value_weighted['precision'],
-            'precision_opa': class_precision['precision'][0],
-            'precision_opb': class_precision['precision'][1],
-            'precision_opc': class_precision['precision'][2],
-            'precision_opd': class_precision['precision'][3],
-            'recall_micro': recall_value_micro['recall'],
-            'recall_macro': recall_value_macro['recall'],
-            'recall_weighted': recall_value_weighted['recall'],
-            'recall_opa': class_recall['recall'][0],
-            'recall_opb': class_recall['recall'][1],
-            'recall_opc': class_recall['recall'][2],
-            'recall_opd': class_recall['recall'][3],
-            'confusion_matrix': confusion_matrix_serializable['confusion_matrix'].tolist()  # convert to list to be serializable
-        }
-
     # SET TRAINER: MODEL TO TRAIN, TRAINING ARGUMENTS, DATSET SPLITS...
     trainer = Trainer(
         model=model,
@@ -224,15 +176,27 @@ def main(training_arguments_path: str):
     train_metrics = train_result.metrics
     train_metrics["train_samples"] = len(dataset['train'])
     trainer.save_model()  # Saves the tokenizer too for easy upload
-    trainer.log_metrics("train", train_metrics)
-    trainer.save_metrics("train", train_metrics)
+    trainer.log_metrics(split="train", metrics=train_metrics) # Combined 'False' to avoid creating 'all_results.json'
+    trainer.save_metrics(split="train", metrics=train_metrics, combined=False) # Creates: <output_dir>/train_results.json # Combined 'False' to avoid creating 'all_results.json'
     trainer.save_state()
 
+    # EVALUATE MODEL (INFERENCE) #
     logger.info("*** Evaluate ***")
-    metrics = trainer.evaluate(eval_dataset=dataset['dev'])
-    metrics["eval_samples"] = len(dataset['dev'])
-    trainer.log_metrics("eval", metrics)
-    trainer.save_metrics("eval", metrics)
+    inference_splits = {
+        "inference_eval": dataset['dev'],
+        "inference_test": dataset['test']
+    }
+    for split_name, instances in inference_splits.items():
+        results = trainer.predict(test_dataset=instances) # .predict() is used insted of .evaluate() to get predictions for the confusion matrix
+        metrics = results.metrics
+        predictions = results.predictions
+        predictions = np.argmax(predictions, axis=1)
+        metrics["samples"] = len(instances)
+        metrics.pop("test_confusion_matrix") # remove the confusion matrix from the metrics (tries to serialize it and fails)
+        confusion_matrix = wandb.plot.confusion_matrix(probs=None, y_true=results.label_ids, preds=predictions, class_names=label_list, title=f'{split_name} confusion matrix')
+        wandb.log({f'{split_name}_confusion_matrix': confusion_matrix})
+        trainer.log_metrics(split=split_name, metrics=metrics)  # Log # Combined 'False' to avoid creating 'all_results.json'
+        trainer.save_metrics(split=split_name, metrics=metrics, combined=False) # Creates: <output_dir>/<split_name>_results.json # Combined 'False' to avoid creating 'all_results.json'
 
 
 if __name__ == '__main__':

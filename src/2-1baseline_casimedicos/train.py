@@ -8,7 +8,6 @@ from ModelDataTrainingArguments import ModelDataTrainingArguments
 from eval_function import compute_metrics
 import datasets
 from datasets import load_dataset
-import evaluate
 import transformers
 from transformers import AutoTokenizer, AutoModelForSequenceClassification, Trainer, TrainingArguments, set_seed, HfArgumentParser
 import wandb

@@ -1,7 +1,6 @@
 # BAME azterketaren galderak erantzuteko sistema automatiko elebiduna
 
-[![Static Badge](https://img.shields.io/badge/%F0%9F%A4%97%20Huggingface-blue?style=for-the-badge)
-](https://huggingface.co/) ![Static Badge](https://img.shields.io/badge/PyTorch-F1A77D?style=for-the-badge&logo=pytorch) ![Static Badge](https://img.shields.io/badge/WANDB-black?style=for-the-badge&logo=weightsandbiases)
+[![Static Badge](https://img.shields.io/badge/%F0%9F%A4%97%20Huggingface-blue?style=for-the-badge)](https://huggingface.co/) ![Static Badge](https://img.shields.io/badge/PyTorch-F1A77D?style=for-the-badge&logo=pytorch) ![Static Badge](https://img.shields.io/badge/WANDB-black?style=for-the-badge&logo=weightsandbiases)
 
 Lan honek Adimen Artifizialeko (AA) eredu elebidun bat garatzea eta entrenatzea du helburu, BAME (Barne Mediku Egoiliarra) azterketa galderen erantzun posible kopuru aldakor bati ebazteko gai izango dena, Hizkuntza Naturalaren Prozesamenduaren (HNP) eta ikasketa sakonaren artearen egoerako teknikak erabiliz.
 

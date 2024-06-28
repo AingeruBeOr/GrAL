@@ -1,7 +1,6 @@
 # Bilingual Automatic System for Solving MIR Exams
 
-[![Static Badge](https://img.shields.io/badge/%F0%9F%A4%97%20Huggingface-blue?style=for-the-badge)
-](https://huggingface.co/) ![Static Badge](https://img.shields.io/badge/PyTorch-F1A77D?style=for-the-badge&logo=pytorch) ![Static Badge](https://img.shields.io/badge/WANDB-black?style=for-the-badge&logo=weightsandbiases)
+[![Static Badge](https://img.shields.io/badge/%F0%9F%A4%97%20Huggingface-blue?style=for-the-badge)](https://huggingface.co/) ![Static Badge](https://img.shields.io/badge/PyTorch-F1A77D?style=for-the-badge&logo=pytorch) ![Static Badge](https://img.shields.io/badge/WANDB-black?style=for-the-badge&logo=weightsandbiases)
 
 The present work focuses on the implementation and training of a bilingual Artificial Intelligence (AI) model capable of solving questions of MIR *Médico Interno Residente* exams with a variable number of possible answers, using state-of-the-art techniques from Natural Language Processing (NLP) and deep learning.
 

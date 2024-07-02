@@ -10,12 +10,12 @@
     "test_file": "JSONL/en.test_casimedicos.jsonl",
 
     "warmup_steps": 10,
-    "learning_rate": 5e-5,
+    "learning_rate": 9.955566592958759e-05,
     
-    "num_train_epochs": 10,
-    "per_device_train_batch_size": 18,
+    "num_train_epochs": 27,
+    "per_device_train_batch_size": 17,
     "per_device_eval_batch_size": 16,
-    "gradient_accumulation_steps": 1,
+    "gradient_accumulation_steps": 5,
 
     "evaluation_strategy": "steps",
     "eval_steps": 5,

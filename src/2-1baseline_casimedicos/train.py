@@ -59,7 +59,7 @@ def setup_logger(training_args):
         f"Process rank: {training_args.local_rank}, device: {training_args.device}, n_gpu: {training_args.n_gpu}, "
         + f"distributed training: {training_args.parallel_mode.value == 'distributed'}, 16-bits training: {training_args.fp16}"
     )
-    logger.info(f"Training/evaluation parameters {training_args}")
+    #logger.info(f"Training/evaluation parameters {training_args}")
 
 
 def main(training_arguments_path: str):

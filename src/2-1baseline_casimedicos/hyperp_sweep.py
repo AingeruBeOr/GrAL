@@ -3,7 +3,6 @@ import sys
 import logging
 import shutil
 import datetime
-import wandb
 from datasets import load_dataset
 from transformers import AutoTokenizer, AutoModelForSequenceClassification, Trainer, TrainingArguments, set_seed, HfArgumentParser
 from eval_function import compute_metrics
@@ -25,7 +24,7 @@ def optuna_hp_space(trial):
         "learning_rate": trial.suggest_float("learning_rate", 1e-6, 1e-4, log=True),
         "per_device_train_batch_size": trial.suggest_int("per_device_train_batch_size", 1, 18), 
         "gradient_accumulation_steps": trial.suggest_int("gradient_accumulation_steps", 1, 8), 
-        "epochs": trial.suggest_int("epochs", 1, 30),
+        "num_train_epochs": trial.suggest_int("num_train_epochs", 1, 30),
     }
 
 

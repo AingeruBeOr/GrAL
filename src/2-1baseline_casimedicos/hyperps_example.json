@@ -30,5 +30,5 @@
     "metric_for_best_model": "eval_accuracy",
     "load_best_model_at_end": true,
 
-    "seed": 42
+    "seed": 16
 }

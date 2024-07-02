@@ -1,3 +1,5 @@
+# baseline-architecture and CasiMedicos-dataset
+
 This model is finetuned using:
 
 - Dataset: CasiMedicos (english)
@@ -10,7 +12,7 @@ Executable files:
     - `inference_test_results.json`: inference results over the test dataset.
 - `hyperp_sweep.py`: for hyperparameter sweep.
 
-Axuiliary files:
+Auxiliary files:
 - `ModelDataTrainingArguments.py`: extra arguments for model configuration.
 - `eval_function`: evaluation function computed during training.
 - `hypers_example.json`: training arguments JSON example for the training.

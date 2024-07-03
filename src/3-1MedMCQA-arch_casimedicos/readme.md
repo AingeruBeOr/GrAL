@@ -17,6 +17,6 @@ Auxiliary files:
 
 ## Launching a hyperparameter sweep using wandb
 
-1. Genenarte a YAML file
+1. Genenarte a YAML file.
 2. Create a sweep from CLI using: `wandb sweep --project <project_name> <YAML file>`. Returns a `sweep_ID`.
 3. Start an agent: `wandb agent <entity>/<project_name>/<sweep_ID>` (`entity` is the account name in wandb).

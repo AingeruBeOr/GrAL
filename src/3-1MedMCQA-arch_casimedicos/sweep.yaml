@@ -5,9 +5,14 @@ metric:
   name: val_acc
   goal: maximize
 parameters:
+  batch_size:
+    values: [1, 2, 3]
   accumulate_grad_batches:
-    values: [1, 2, 4]
+    min: 1
+    max: 48
   learning_rate:
-    values: [2e-4, 5e-5, 1e-5]
+    min: 0.000001
+    max: 0.0001
   num_epochs:
-    values: [10, 20, 30]
+    min: 1
+    max: 30

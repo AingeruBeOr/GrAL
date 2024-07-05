@@ -113,8 +113,6 @@ def train(gpu, args:Arguments, experiment_name, version):
         inference_model.test_dataset = dataset
         test_results = trainer.test(model=inference_model, dataloaders=inference_model.test_dataloader())
         outputs = trainer.predict(model=inference_model, dataloaders=inference_model.test_dataloader())
-        print(f"{split_name} inference results: {test_results}")
-        print(f"{split_name} inference predictions: {outputs}")
         predictions = []
         labels = []
         for output in outputs:
@@ -142,14 +140,6 @@ def train(gpu, args:Arguments, experiment_name, version):
     
 
 if __name__ == "__main__":
-
-    parser = argparse.ArgumentParser()
-    #parser.add_argument("--model", default="eriberta_libre", help="name of the model")
-    #parser.add_argument("--dataset_folder_name", default="content/medmcqa_data/", help="dataset folder")
-    #parser.add_argument("--use_context", default=False, action='store_true', help="mention this flag to use_context")
-    cmd_args = parser.parse_args()
-    #model = cmd_args.model
-
     # Get the arguments (hiperparameters, paths, training and model specs)
     args = Arguments()
 

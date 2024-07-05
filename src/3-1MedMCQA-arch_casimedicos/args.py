@@ -25,10 +25,10 @@ class Arguments:
     test_csv:str = os.path.join(dataset_folder, "en.test_casimedicos.jsonl")                                           # Path to the test CSV file # TODO el nuestro es JSONL
     dev_csv:str = os.path.join(dataset_folder, "en.dev_casimedicos.jsonl")                                              # Path to the dev CSV file # TODO el nuestro es JSONL
     max_len:int = 400                                       # Max length of the maximum possible input (maximum value: 512)
-    num_epochs:int = 1                                      # EPOCHS # Antes era 5
-    batch_size:int = 3                                      # Batch size # Antes era 4
-    accumulate_grad_batches:int = 12                        # Gradient accumulation
-    learning_rate:float = 2e-4                              # Learning rate
+    num_epochs:int = 25                                     # EPOCHS # Antes era 5
+    batch_size:int = 2                                      # Batch size # Antes era 4
+    accumulate_grad_batches:int = 2                         # Gradient accumulation
+    learning_rate:float = 7.99e-5                           # Learning rate
     #val_check_interval:int | float = 1.0                   # Validation check interval (how many batches to consider before running validation). It has to be greater than the steps before backpropagation. Caution! It can be tricky to set this parameter.
     #log_every_n_steps:int = 1                              # Log every n steps
     #checkpoint_batch_size:int = 32
@@ -38,7 +38,7 @@ class Arguments:
     metric_for_best_model_mode:str = 'max'                  # Metric for best model mode
     n_checkpoints_to_save:str = 1                           # Number of checkpoints to save # TODO if > 1, change code when loading best model
     hidden_dropout_prob:float =0.4                          # Dropout
-    seed:int = 42                                           # Seed for reproducibility. Afecta a iniciazliación de pesos, aleatoriedad en el dataset, etc.
+    seed:int = 16                                           # Seed for reproducibility. Afecta a iniciazliación de pesos, aleatoriedad en el dataset, etc.
     device:str='cuda'
     gpu=0                                                   # '0,1' # a lo que esté establecido en CUDA_VISIBLE_DEVICES. Aunque si está establecido a 1, como solo es visible la 1 también hay que poner 0. Si estuvieran en CUDA_VISIBLE_DEVICES las dos, podríamos elegir
 

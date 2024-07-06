@@ -4,31 +4,35 @@ from torch.utils.data.dataloader import DataLoader
 import numpy as np
 import os
 
+'''
+Script to generate JSONL files for the CasiMedicos-balanced dataset
+'''
+
 SETS_PATH = [
-    '../../data/casiMedicos/JSONL/es.train_casimedicos.jsonl',
-    '../../data/casiMedicos/JSONL/es.test_casimedicos.jsonl',
-    '../../data/casiMedicos/JSONL/es.dev_casimedicos.jsonl'
+    '../../data/casiMedicos/JSONL/en.train_casimedicos.jsonl',
+    '../../data/casiMedicos/JSONL/en.test_casimedicos.jsonl',
+    '../../data/casiMedicos/JSONL/en.dev_casimedicos.jsonl'
 ]
 
 for set_path in SETS_PATH:
-    set = CasiMedicosDataset(
-        jsonl_path=set_path,
-        use_context=False
-    )
+    instances = []
+    with open(set_path, 'r') as file:
+        instances = [json.loads(row) for row in file]
 
     new_file_path = f'../../data/casiMedicos-balanced/JSONL/{os.path.basename(set_path)}'
 
     with open(new_file_path, 'w') as file:
-        dataloader = DataLoader(set, batch_size=1, shuffle=False)   
 
-        for instance in dataloader:
-            question = instance[0][0]
-            correct_option_id = instance[2].item()
-            correct_option = instance[1][correct_option_id][0]
-            incorrect_options = [instance[1][index][0] for index, option in enumerate(instance[1]) if index != correct_option_id]
+        for instance in instances:
+            id = instance['id']
+            question = instance['full_question']
+            correct_option_id = instance['correct_option']
+            correct_option = instance['options'][str(correct_option_id)]
+            incorrect_options = [instance['options'][index] for index, option in instance['options'].items() if index != correct_option_id]
 
             np.random.shuffle(incorrect_options)
             file.write(json.dumps({
+                'id': f'{id}-1',
                 'question': question,
                 'options': {
                     "1": correct_option,
@@ -42,6 +46,7 @@ for set_path in SETS_PATH:
 
             np.random.shuffle(incorrect_options)
             file.write(json.dumps({
+                'id': f'{id}-2',
                 'question': question,
                 'options': {
                     "1": incorrect_options[0],
@@ -55,6 +60,7 @@ for set_path in SETS_PATH:
 
             np.random.shuffle(incorrect_options)
             file.write(json.dumps({
+                'id': f'{id}-3',
                 'question': question,
                 'options': {
                     "1": incorrect_options[0],
@@ -68,6 +74,7 @@ for set_path in SETS_PATH:
 
             np.random.shuffle(incorrect_options)
             file.write(json.dumps({
+                'id': f'{id}-4',
                 'question': question,
                 'options': {
                     "1": incorrect_options[0],
@@ -81,6 +88,7 @@ for set_path in SETS_PATH:
 
             np.random.shuffle(incorrect_options)
             file.write(json.dumps({
+                'id': f'{id}-5',
                 'question': question,
                 'options': {
                     "1": incorrect_options[0],

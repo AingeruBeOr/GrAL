@@ -1,0 +1,34 @@
+{
+    "output_dir": "../../models/baseline_casimedicos_synthetic_dataset/",
+    "overwrite_output_dir": false,
+
+    "model_name_or_path": "../../models/eriberta_libre/",
+
+    "data_loader": "../../data/casiMedicos-balanced/casimedicos_data_loader.py",
+    "train_file": "JSONL/en.train_casimedicos.jsonl",
+    "validation_file": "JSONL/en.dev_casimedicos.jsonl",
+    "test_file": "JSONL/en.test_casimedicos.jsonl",
+
+    "warmup_steps": 10,
+    "learning_rate": 1.0545007181416824e-05,
+    
+    "num_train_epochs": 27,
+    "per_device_train_batch_size": 3,
+    "per_device_eval_batch_size": 16,
+    "gradient_accumulation_steps": 4,
+
+    "evaluation_strategy": "steps",
+    "eval_steps": 5,
+
+    "logging_dir": "./logs",
+    "logging_steps": 10,
+    "report_to": "wandb",
+
+    "save_strategy": "steps",
+    "save_steps": 100,
+    "save_total_limit": 3,
+    "metric_for_best_model": "eval_accuracy",
+    "load_best_model_at_end": true,
+
+    "seed": 42
+}

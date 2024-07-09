@@ -40,8 +40,8 @@ class MCQAModel(pl.LightningModule):
     self.args = args
     self.batch_size = self.args['batch_size']
     self.dropout = nn.Dropout(self.args['hidden_dropout_prob'])
-    self.linear = nn.Linear(in_features=self.args['hidden_size'],out_features=1)
-    self.ce_loss = nn.CrossEntropyLoss()
+    self.linear = nn.Linear(in_features=self.args['hidden_size'], out_features=1)
+    self.ce_loss = nn.CrossEntropyLoss() # Default value is 'mean'
     self.save_hyperparameters()
     
   
@@ -49,7 +49,7 @@ class MCQAModel(pl.LightningModule):
     self.tokenizer = AutoTokenizer.from_pretrained(model_name_or_path)
     self.model = AutoModel.from_pretrained(model_name_or_path)
  
-  def prepare_dataset(self,train_dataset,val_dataset,test_dataset=None):
+  def prepare_dataset(self, train_dataset, val_dataset, test_dataset=None):
     """
     helper to set the train and val dataset. Doing it during class initialization
     causes issues while loading checkpoint as the dataset class needs to be 
@@ -82,7 +82,7 @@ class MCQAModel(pl.LightningModule):
     logits = self(**inputs)
     loss = self.ce_loss(logits,labels)
     # Log metrics directly using self.log
-    self.log('train_loss', loss, on_epoch=True)
+    self.log('train_loss', loss, on_epoch=True, on_step=True, batch_size=self.args['batch_size'], sync_dist=True)
     return loss
   
   def test_step(self, batch, batch_idx):
@@ -92,9 +92,10 @@ class MCQAModel(pl.LightningModule):
     logits = self(**inputs)
     loss = self.ce_loss(logits,labels)
     
-    self.log('test_loss', loss, on_epoch=True)
+    self.log('test_loss', loss, on_epoch=True, batch_size=self.args['batch_size'], sync_dist=True)
     return {'val_loss': loss, 'logits': logits, 'labels': labels} # Previously: return result (EvalResult). Now there is no need to return a result object
  
+  
   def test_epoch_end(self, outputs):
     # 'outputs' is a list of whatever you returned in `test_step`. Each element of the list corresponds to one batch of samples from each step in an epoch.
     # Calcular el promedio del loss
@@ -113,17 +114,34 @@ class MCQAModel(pl.LightningModule):
     accuracy = correct_predictions.cpu().detach().numpy() / total_number_of_predictions
 
     # Get the confusion matrix
-    labels = [x['labels'].cpu().detach().item() for x in outputs]
-    predictions = [x.cpu().detach().item() for x in predictions]
-    confusion_matrix = wandb.plot.confusion_matrix(probs=None, y_true=labels, preds=predictions, class_names=['A', 'B', 'C', 'D', 'E'])
+    labels = []
+    for x in outputs:
+      labels.extend(x['labels'].cpu().detach().tolist()) # .tolist() if batch_size > 1
+    
+    predictions_cpu = []
+    for x in predictions:
+      predictions_cpu.extend(x.cpu().detach().tolist())
 
-    self.log_dict({"test_loss":avg_loss,"test_acc":accuracy},prog_bar=True,on_epoch=True)
-    self.log('avg_test_loss', avg_loss)
-    self.log('avg_test_acc', accuracy)
-    wandbLogger = self.loggers[0]
-    wandbLogger.log_metrics({"conf_matrix_test": confusion_matrix})
+    #confusion_matrix = wandb.plot.confusion_matrix(probs=None, y_true=labels, preds=predictions_cpu, class_names=['A', 'B', 'C', 'D', 'E'])
+
+    self.log_dict({"test_loss":avg_loss,"test_acc":accuracy}, prog_bar=True, on_epoch=True, batch_size=self.args['batch_size'], sync_dist=True)
+    self.log('avg_test_loss', avg_loss, batch_size=self.args['batch_size'], sync_dist=True)
+    self.log('avg_test_acc', accuracy, batch_size=self.args['batch_size'], sync_dist=True)
+    #wandbLogger = self.loggers[0]
+    #wandbLogger.log_metrics({"conf_matrix_test": confusion_matrix})
     return avg_loss # Previously: return result (EvalResult). Now there is no need to return a result object
   
+  def predict_step(self, batch, batch_idx):
+    inputs,labels = batch
+    for key in inputs:
+      inputs[key] = inputs[key].to(self.args["device"])
+    logits = self(**inputs)
+    loss = self.ce_loss(logits,labels)
+    
+    # log not supported in predict_step
+    return {'val_loss': loss, 'logits': logits, 'labels': labels} # Previously: return result (EvalResult). Now there is no need to return a result object
+
+
   def validation_step(self, batch, batch_idx):
     inputs,labels = batch
     # Move to self.args['device']
@@ -131,7 +149,7 @@ class MCQAModel(pl.LightningModule):
       inputs[key] = inputs[key].to(self.args['device'])
     logits = self(**inputs) # calls forward
     loss = self.ce_loss(logits,labels)
-    self.log('val_loss', loss, on_epoch=True)
+    self.log('val_loss', loss, on_epoch=True, batch_size=self.args['batch_size'], sync_dist=True)
     return {'val_loss': loss, 'logits': logits, 'labels': labels} # Previously: return result (EvalResult). Now there is no need to return a result object.
 
   def validation_epoch_end(self, outputs):
@@ -153,14 +171,20 @@ class MCQAModel(pl.LightningModule):
     accuracy = correct_predictions.cpu().detach().numpy() / total_number_of_predictions
 
     # Get the confusion matrix
-    labels = [x['labels'].cpu().detach().item() for x in outputs]
-    predictions = [x.cpu().detach().item() for x in predictions]
-    confusion_matrix = wandb.plot.confusion_matrix(probs=None, y_true=labels, preds=predictions, class_names=['A', 'B', 'C', 'D', 'E'])
+    labels = []
+    for x in outputs:
+      labels.extend(x['labels'].cpu().detach().tolist()) # .tolist() if batch_size > 1
+    
+    predictions_cpu = []
+    for x in predictions:
+      predictions_cpu.extend(x.cpu().detach().tolist())
+
+    confusion_matrix = wandb.plot.confusion_matrix(probs=None, y_true=labels, preds=predictions_cpu, class_names=['A', 'B', 'C', 'D', 'E'])
 
     # Logging
-    self.log_dict({"val_loss": avg_loss, "val_acc": accuracy}, prog_bar=True, on_epoch=True)
-    self.log('avg_val_loss', avg_loss)
-    self.log('avg_val_acc', accuracy)
+    self.log_dict({"val_loss": avg_loss, "val_acc": accuracy}, prog_bar=True, on_epoch=True, batch_size=self.args['batch_size'], sync_dist=True)
+    self.log('avg_val_loss', avg_loss, batch_size=self.args['batch_size'], sync_dist=True)
+    self.log('avg_val_acc', accuracy, batch_size=self.args['batch_size'], sync_dist=True)
     wandbLogger = self.loggers[0]
     wandbLogger.log_metrics({"conf_matrix": confusion_matrix})
     return avg_loss # Previously: return result (EvalResult). Now there is no need to return a result object

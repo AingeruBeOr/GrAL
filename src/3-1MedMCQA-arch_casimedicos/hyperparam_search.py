@@ -97,7 +97,7 @@ def train(gpu, args:Arguments, experiment_name, version):
 if __name__ == "__main__":
     # Get the arguments (hiperparameters, paths, training and model specs)
     args = Arguments()
-    wandb.init(project=args.wandb_project_name) #TODO project name
+    wandb.init(project=args.wandb_project_name)
 
     # Change the arguments used for the hyperparameter search
     args = Arguments(

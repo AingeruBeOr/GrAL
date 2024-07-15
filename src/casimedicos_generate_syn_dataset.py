@@ -12,6 +12,7 @@ SETS_PATH = [
     f'../data/casiMedicos/JSONL/{LANG}.test_casimedicos.jsonl',
     f'../data/casiMedicos/JSONL/{LANG}.dev_casimedicos.jsonl'
 ]
+np.random.seed(42) # Seed for reproducibility
 
 for set_path in SETS_PATH:
     instances = []
@@ -35,10 +36,10 @@ for set_path in SETS_PATH:
                 'question': question,
                 'options': {
                     "1": correct_option,
-                    "2": incorrect_options[0],
-                    "3": incorrect_options[1],
-                    "4": incorrect_options[2],
-                    "5": incorrect_options[3]
+                    "2": incorrect_options[0] if isinstance(incorrect_options[0], str) else "",
+                    "3": incorrect_options[1] if isinstance(incorrect_options[1], str) else "",
+                    "4": incorrect_options[2] if isinstance(incorrect_options[2], str) else "",
+                    "5": incorrect_options[3] if isinstance(incorrect_options[3], str) else ""
                 },
                 'correct_option': 1
             }) + '\n')
@@ -48,11 +49,11 @@ for set_path in SETS_PATH:
                 'id': f'{id}-2',
                 'question': question,
                 'options': {
-                    "1": incorrect_options[0],
+                    "1": incorrect_options[0] if isinstance(incorrect_options[0], str) else "",
                     "2": correct_option,
-                    "3": incorrect_options[1],
-                    "4": incorrect_options[2],
-                    "5": incorrect_options[3]
+                    "3": incorrect_options[1] if isinstance(incorrect_options[1], str) else "",
+                    "4": incorrect_options[2] if isinstance(incorrect_options[2], str) else "",
+                    "5": incorrect_options[3] if isinstance(incorrect_options[3], str) else ""
                 },
                 'correct_option': 2
             }) + '\n')
@@ -62,11 +63,11 @@ for set_path in SETS_PATH:
                 'id': f'{id}-3',
                 'question': question,
                 'options': {
-                    "1": incorrect_options[0],
-                    "2": incorrect_options[1],
+                    "1": incorrect_options[0] if isinstance(incorrect_options[0], str) else "",
+                    "2": incorrect_options[1] if isinstance(incorrect_options[1], str) else "",
                     "3": correct_option,
-                    "4": incorrect_options[2],
-                    "5": incorrect_options[3]
+                    "4": incorrect_options[2] if isinstance(incorrect_options[2], str) else "",
+                    "5": incorrect_options[3] if isinstance(incorrect_options[3], str) else ""
                 },
                 'correct_option': 3
             }) + '\n')
@@ -76,11 +77,11 @@ for set_path in SETS_PATH:
                 'id': f'{id}-4',
                 'question': question,
                 'options': {
-                    "1": incorrect_options[0],
-                    "2": incorrect_options[1],
-                    "3": incorrect_options[2],
+                    "1": incorrect_options[0] if isinstance(incorrect_options[0], str) else "",
+                    "2": incorrect_options[1] if isinstance(incorrect_options[1], str) else "",
+                    "3": incorrect_options[2] if isinstance(incorrect_options[2], str) else "",
                     "4": correct_option,
-                    "5": incorrect_options[3]
+                    "5": incorrect_options[3] if isinstance(incorrect_options[3], str) else ""
                 },
                 'correct_option': 4
             }) + '\n')
@@ -90,10 +91,10 @@ for set_path in SETS_PATH:
                 'id': f'{id}-5',
                 'question': question,
                 'options': {
-                    "1": incorrect_options[0],
-                    "2": incorrect_options[1],
-                    "3": incorrect_options[2],
-                    "4": incorrect_options[3],
+                    "1": incorrect_options[0] if isinstance(incorrect_options[0], str) else "",
+                    "2": incorrect_options[1] if isinstance(incorrect_options[1], str) else "",
+                    "3": incorrect_options[2] if isinstance(incorrect_options[2], str) else "",
+                    "4": incorrect_options[3] if isinstance(incorrect_options[3], str) else "",
                     "5": correct_option
                 },
                 'correct_option': 5

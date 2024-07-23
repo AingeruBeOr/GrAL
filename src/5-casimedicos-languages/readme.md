@@ -1,1 +1,1 @@
-(TODO, escribir del Notion)
+The aim of this experiment is to launch trainings with different languages to check with which language the model performs the best results.

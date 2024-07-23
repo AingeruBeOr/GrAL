@@ -49,15 +49,7 @@ def train(gpu, args:Arguments, experiment_name, version):
         mode=args.metric_for_best_model_mode
     )
 
-    # Model checkpoint callback. Reference: https://lightning.ai/docs/pytorch/1.9.0/api/pytorch_lightning.callbacks.ModelCheckpoint.html#pytorch_lightning.callbacks.ModelCheckpoint
-    cp_callback = pl.callbacks.ModelCheckpoint(
-        monitor=args.metric_for_best_model,
-        dirpath=checkpoints_dir,
-        filename='{epoch:02d}-{val_loss:.2f}-{val_acc:.2f}',
-        save_top_k=args.n_checkpoints_to_save,
-        save_weights_only=False, # if False, optimizer states, lr-scheduler states, etc are added in the checkpoint too
-        mode=args.metric_for_best_model_mode
-    )
+    # Checkpointing is not done in hyperparameter search
 
     # Load pretrained model
     mcqaModel = MCQAModel(
@@ -76,7 +68,7 @@ def train(gpu, args:Arguments, experiment_name, version):
         gpus=gpu,
         strategy="ddp" if not isinstance(gpu, list) else None,
         logger=[wb, csv_log],
-        callbacks= [early_stopping_callback, cp_callback],
+        callbacks=early_stopping_callback,
         max_epochs=args.num_epochs,                           # EPOCHS
         accumulate_grad_batches=args.accumulate_grad_batches  # Gradient accumulation
     )

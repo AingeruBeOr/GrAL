@@ -43,11 +43,11 @@ tokenized_dataset_test_lengths = dataset['test'].map(generate_dataset_instances)
 tokenized_dataset_test_lengths = tokenized_dataset_test_lengths.map(tokenize_function, batched=True)
 
 train_lengths_df = pd.DataFrame(data = {'length': tokenized_dataset_train_lengths['lengths']})
-train_lengths_df['split'] = 'Train'
+train_lengths_df['split'] = '<i>train<i>'
 dev_lengths_df = pd.DataFrame(data = {'length': tokenized_dataset_dev_lengths['lengths']})
-dev_lengths_df['split'] = '<i>Validation</i>'
+dev_lengths_df['split'] = '<i>dev</i>'
 test_lengths_df = pd.DataFrame(data = {'length': tokenized_dataset_test_lengths['lengths']})
-test_lengths_df['split'] = 'Test'
+test_lengths_df['split'] = '<i>test</i>'
 
 # Combine the train, dev and test dataframes
 combined_df = pd.concat([train_lengths_df, dev_lengths_df, test_lengths_df], ignore_index=True)

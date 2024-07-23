@@ -100,6 +100,11 @@ def train(gpu, args:Arguments, experiment_name, version):
     # Load best model at training to use it for inference on the test set
     best_checkpoint_model_path = os.path.join(checkpoints_dir, ckpt[0]) # TODO el 0 seguro que es el best??
     inference_model = MCQAModel.load_from_checkpoint(best_checkpoint_model_path)
+    inference_model.prepare_dataset(
+        train_dataset=train_dataset,
+        test_dataset=test_dataset,
+        val_dataset=val_dataset
+    )
     inference_model = inference_model.to("cuda")
     inference_model = inference_model.eval()
     
@@ -111,8 +116,8 @@ def train(gpu, args:Arguments, experiment_name, version):
         os.path.join(args.dataset_folder, "en.test_casimedicos.jsonl")
     ]
     for inference_dataset in inference_datasets:
-        mcqaModel.test_dataset = CasiMedicosDatasetBalanced(inference_dataset, args.use_context)
-        test_results = trainer.test(ckpt_path=best_checkpoint_model_path) # TODO, arreglar los argumentos de test
+        inference_model.test_dataset = CasiMedicosDatasetBalanced(inference_dataset, args.use_context)
+        test_results = trainer.test(model=inference_model, dataloaders=inference_model.test_dataloader())
         inference_type_metric_name = os.path.basename(inference_dataset).split('_')[0] + '_inference_accuracy'
         wb.log_metrics({inference_type_metric_name: test_results[0]})
         csv_log.log_metrics({inference_type_metric_name: test_results[0]})
@@ -145,8 +150,7 @@ if __name__ == "__main__":
     
     current_datetime = datetime.datetime.now()
     formatted_datetime = current_datetime.strftime("%Y-%m-%d-%H-%M")
-    exp_name = f"{model_name}___data{os.path.basename(args.train_csv)}___seqlen{str(args.max_len)}___execTime{str(formatted_datetime)}".replace("/","_")
-
+    exp_name = str(formatted_datetime).replace("/","_")
     train(gpu=args.gpu, args=args, experiment_name=exp_name, version=exp_name)
     
     time.sleep(60) # TODO, esto para qué sirve?

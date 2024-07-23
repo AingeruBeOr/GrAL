@@ -15,21 +15,14 @@ Auxiliary files:
 - `model.py`: model architecture details for training.
 - `sweep.yaml`: define a hyperparameter sweep with wandb
 
-Cuidado con el batch size!! Una instancia realmente pasan a ser 25 inputs para el modelo. 
+Be careful with the batch size!! An instance becomes in a 5 instance input for the model.
 
-Instancia:
-    - Instancia con respuesta correcta en A.
-        - Input con la opción A: <s>Q</s>opa</s>
-        - Input con la opción B: <s>Q</s>opb</s>
-        - ...(+3)
-    - Instancia con respuesta correcta en B.
-        - ...(+5)
-    - Instancia con respuesta correcta en C.
-        - ...(+5)
-    - Instancia con respuesta correcta en D.
-        - ...(+5)
-    - Instancia con respuesta correcta en E.
-        - ...(+5)
+Given an instance:
+- Input with the option A: <s>Q</s>opa</s>
+- Input with the option B: <s>Q</s>opb</s>
+- Input with the option C: <s>Q</s>opc</s>
+- Input with the option D: <s>Q</s>opd</s>
+- Input with the option E: <s>Q</s>ope</s>
 
 ## Launching a hyperparameter sweep using wandb
 
